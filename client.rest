@@ -5,9 +5,9 @@ POST {{baseUrl}}/user/
 Content-Type: application/json
 
 {
-  "name": "Zezin",
+  "name": "Zezinho",
   "password": "secret",
   "confirmPassword": "secret",
   "balance": 100.00,
-  "email": "zezin3@zezin.com"
+  "email": "zezinho2@zezinho.com"
 } 
