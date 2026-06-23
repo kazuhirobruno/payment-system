@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.exceptions;
+package br.com.kazuhiro.payment_system.exceptions;
 
 public class PasswordNotMatchesException extends RuntimeException {
   public PasswordNotMatchesException() {

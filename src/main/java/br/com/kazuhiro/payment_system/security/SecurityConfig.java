@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.security;
+package br.com.kazuhiro.payment_system.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

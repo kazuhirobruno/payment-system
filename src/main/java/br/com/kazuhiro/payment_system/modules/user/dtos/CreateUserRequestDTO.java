@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.modules.user.dtos;
+package br.com.kazuhiro.payment_system.modules.user.dtos;
 
 import java.math.BigDecimal;
 

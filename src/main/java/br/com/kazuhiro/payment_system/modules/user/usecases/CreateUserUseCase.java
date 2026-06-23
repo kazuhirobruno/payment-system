@@ -1,14 +1,14 @@
-package br.com.kazuhiro.payment_transfer_api.modules.user.usecases;
+package br.com.kazuhiro.payment_system.modules.user.usecases;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import br.com.kazuhiro.payment_transfer_api.exceptions.PasswordNotMatchesException;
-import br.com.kazuhiro.payment_transfer_api.exceptions.UserFoundException;
-import br.com.kazuhiro.payment_transfer_api.modules.user.dtos.CreateUserRequestDTO;
-import br.com.kazuhiro.payment_transfer_api.modules.user.dtos.CreateUserResponseDTO;
-import br.com.kazuhiro.payment_transfer_api.modules.user.entities.UserEntity;
-import br.com.kazuhiro.payment_transfer_api.modules.user.repositories.UserRepository;
+import br.com.kazuhiro.payment_system.exceptions.PasswordNotMatchesException;
+import br.com.kazuhiro.payment_system.exceptions.UserFoundException;
+import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserRequestDTO;
+import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserResponseDTO;
+import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
+import br.com.kazuhiro.payment_system.modules.user.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service

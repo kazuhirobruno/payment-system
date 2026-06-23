@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.exceptions;
+package br.com.kazuhiro.payment_system.exceptions;
 
 public class UserFoundException extends RuntimeException {
   public UserFoundException() {

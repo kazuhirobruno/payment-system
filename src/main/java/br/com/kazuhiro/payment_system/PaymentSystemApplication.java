@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api;
+package br.com.kazuhiro.payment_system;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

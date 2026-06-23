@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.exceptions.dtos;
+package br.com.kazuhiro.payment_system.exceptions.dtos;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

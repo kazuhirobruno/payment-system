@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.modules.transactions.entities;
+package br.com.kazuhiro.payment_system.modules.transactions.entities;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -10,7 +10,7 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import br.com.kazuhiro.payment_transfer_api.modules.user.entities.UserEntity;
+import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
 
 @Entity
 @Data

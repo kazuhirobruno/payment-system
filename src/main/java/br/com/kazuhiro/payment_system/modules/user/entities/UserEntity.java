@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_transfer_api.modules.user.entities;
+package br.com.kazuhiro.payment_system.modules.user.entities;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
