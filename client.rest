@@ -1,0 +1,13 @@
+@baseUrl = http://localhost:8080
+
+### Criar um novo cliente
+POST {{baseUrl}}/user/
+Content-Type: application/json
+
+{
+  "name": "Zezin",
+  "password": "secret",
+  "confirmPassword": "secret",
+  "balance": 100.00,
+  "email": "zezin1@zezin.com"
+} 
