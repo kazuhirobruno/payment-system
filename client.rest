@@ -9,5 +9,5 @@ Content-Type: application/json
   "password": "secret",
   "confirmPassword": "secret",
   "balance": 100.00,
-  "email": "zezin1@zezin.com"
+  "email": "zezin2@zezin.com"
 } 

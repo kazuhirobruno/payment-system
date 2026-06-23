@@ -13,10 +13,10 @@
   </parent>
 
   <groupId>br.com.kazuhiro</groupId>
-  <artifactId>payment-transfer-api</artifactId>
+  <artifactId>payment-system</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
-  <name>payment-transfer-api</name>
+  <name>payment-system</name>
   <description>Financial transaction platform for user-to-user money transfers</description>
 
   <properties>
