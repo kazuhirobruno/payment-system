@@ -2,6 +2,7 @@ package br.com.kazuhiro.payment_system.modules.user.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import br.com.kazuhiro.payment_system.exceptions.DeletedUserLoginException;
 import br.com.kazuhiro.payment_system.modules.user.dtos.AuthUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.AuthUserResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.usecases.AuthUserUseCase;
@@ -54,7 +55,7 @@ class AuthUserControllerTest {
   }
 
   @Test
-  @DisplayName("Cenário 1: Deve retornar 200 OK e o token quando as credenciais forem válidas")
+  @DisplayName("Deve retornar 200 OK e o token quando as credenciais forem válidas")
   void shouldReturnOkWhenCredentialsAreValid() throws Exception {
     AuthUserResponseDTO expectedResponse = AuthUserResponseDTO.builder()
         .token("mocked-jwt-token")
@@ -67,7 +68,6 @@ class AuthUserControllerTest {
     mockMvc.perform(post("/user/auth")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(requestDTO)))
-
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.token").value("mocked-jwt-token"))
         .andExpect(jsonPath("$.roles[0]").value("USER"))
@@ -77,7 +77,25 @@ class AuthUserControllerTest {
   }
 
   @Test
-  @DisplayName("Cenário 2: Deve retornar 401 Unauthorized quando o UseCase lançar uma exceção")
+  @DisplayName("Should return 404 Not Found when user account is inactive or deleted")
+  void shouldReturnNotFoundWhenUserAccountIsInactiveOrDeleted() throws Exception {
+    String expectedErrorMessage = "Usuário não encontrado.";
+
+    when(authUserUseCase.execute(any(AuthUserRequestDTO.class)))
+        .thenThrow(new DeletedUserLoginException());
+
+    mockMvc.perform(post("/user/auth")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(requestDTO)))
+
+        .andExpect(status().isNotFound())
+        .andExpect(content().string(expectedErrorMessage));
+
+    verify(authUserUseCase, times(1)).execute(any(AuthUserRequestDTO.class));
+  }
+
+  @Test
+  @DisplayName("Deve retornar 401 Unauthorized quando ocorrer qualquer outra falha de autenticação")
   void shouldReturnUnauthorizedWhenAuthenticationFails() throws Exception {
     String errorMessage = "Email/senha incorreto.";
     when(authUserUseCase.execute(any(AuthUserRequestDTO.class)))
@@ -86,7 +104,6 @@ class AuthUserControllerTest {
     mockMvc.perform(post("/user/auth")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(requestDTO)))
-
         .andExpect(status().isUnauthorized())
         .andExpect(content().string(errorMessage));
 

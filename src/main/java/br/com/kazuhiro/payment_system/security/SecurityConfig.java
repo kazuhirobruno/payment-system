@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-  private final UserSecurityConfig userSecurityConfig;
+  private final UserSecurityFilter userSecurityFilter;
 
   private static final String[] PERMIT_ALL_LIST = {
       "/swagger-ui/**",
@@ -32,7 +32,7 @@ public class SecurityConfig {
               .requestMatchers("/user/auth").permitAll()
               .requestMatchers(PERMIT_ALL_LIST).permitAll();
           auth.anyRequest().authenticated();
-        }).addFilterBefore(userSecurityConfig, BasicAuthenticationFilter.class);
+        }).addFilterBefore(userSecurityFilter, BasicAuthenticationFilter.class);
     return http.build();
   }
 

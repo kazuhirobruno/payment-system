@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 @Service
@@ -19,6 +20,8 @@ public class UserJWTProvider {
     try {
       var tokenDecoded = JWT.require(algorithm).build().verify(token);
       return tokenDecoded;
+    } catch (TokenExpiredException e) {
+      throw e;
     } catch (Exception e) {
       e.printStackTrace();
       return null;

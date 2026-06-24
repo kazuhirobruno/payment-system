@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
+import br.com.kazuhiro.payment_system.exceptions.DeletedUserLoginException;
 import br.com.kazuhiro.payment_system.modules.user.dtos.AuthUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.AuthUserResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.repositories.UserRepository;
@@ -37,6 +38,10 @@ public class AuthUserUseCase {
 
     if (!passwordMatches) {
       throw new AuthenticationException(exceptionMessage);
+    }
+
+    if (!user.isActive()) {
+      throw new DeletedUserLoginException();
     }
 
     Algorithm algorithm = Algorithm.HMAC256(secretkey);

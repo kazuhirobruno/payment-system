@@ -2,16 +2,20 @@ package br.com.kazuhiro.payment_system.modules.user.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.kazuhiro.payment_system.exceptions.PasswordNotMatchesException;
 import br.com.kazuhiro.payment_system.exceptions.UserFoundException;
+import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.usecases.CreateUserUseCase;
+import br.com.kazuhiro.payment_system.modules.user.usecases.DeleteUserUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/user")
 public class UserController {
   private final CreateUserUseCase createUserUseCase;
+  private final DeleteUserUseCase deleteUserUseCase;
 
   @PostMapping("/")
   @Operation(summary = "Cadastrar um novo usuário no sistema", description = "Esta rota é pública e permite a abertura de uma carteira digital com depósito de saldo inicial.")
@@ -41,6 +46,23 @@ public class UserController {
       return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
     } catch (Exception e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno ao processar o cadastro.");
+    }
+  }
+
+  @DeleteMapping("/delete")
+  @Operation(summary = "Deletar usuário autenticado", description = "Remove a conta do usuário logado no sistema com base no ID extraído do token JWT.")
+  @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso. Não retorna corpo na resposta.")
+  @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "O token enviado está expirado. Faça login novamente.")))
+  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados (ex: conta já excluída).", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
+  @ApiResponse(responseCode = "500", description = "Erro interno no servidor ou falha de comunicação com o banco de dados.", content = @Content(schema = @Schema(type = "string", example = "Ocorreu um erro interno no servidor.")))
+  public ResponseEntity<Void> delete(@RequestAttribute("user_id") String userId) {
+    try {
+      this.deleteUserUseCase.delete(userId);
+      return ResponseEntity.noContent().build();
+    } catch (UserNotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
 }

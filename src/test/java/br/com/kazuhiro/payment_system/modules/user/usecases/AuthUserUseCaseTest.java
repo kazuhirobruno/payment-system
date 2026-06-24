@@ -3,6 +3,7 @@ package br.com.kazuhiro.payment_system.modules.user.usecases;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import br.com.kazuhiro.payment_system.exceptions.DeletedUserLoginException;
 import br.com.kazuhiro.payment_system.modules.user.dtos.AuthUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.AuthUserResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
@@ -47,7 +48,7 @@ class AuthUserUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve autenticar o usuário com sucesso e retornar o token JWT")
+  @DisplayName("Deve autenticar o usuário com sucesso e retornar o token JWT quando ativo")
   void shouldAuthenticateUserWithSuccess() throws AuthenticationException {
     AuthUserRequestDTO request = new AuthUserRequestDTO("user@email.com", "password123");
     UUID userId = UUID.randomUUID();
@@ -56,6 +57,7 @@ class AuthUserUseCaseTest {
         .id(userId)
         .email("user@email.com")
         .password("encodedPassword123")
+        .active(true)
         .build();
 
     when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
@@ -78,7 +80,29 @@ class AuthUserUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve lançar UsernameNotFoundException quando o e-mail não for encontrado")
+  @DisplayName("Deve lançar DeletedUserLoginException quando o usuário estiver inativo (Soft Delete)")
+  void shouldThrowDeletedUserLoginExceptionWhenUserIsInactive() {
+    AuthUserRequestDTO request = new AuthUserRequestDTO("deleted@email.com", "password123");
+
+    UserEntity user = UserEntity.builder()
+        .email("deleted@email.com")
+        .password("encodedPassword123")
+        .active(false)
+        .build();
+
+    when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(true);
+
+    assertThrows(DeletedUserLoginException.class, () -> {
+      authUserUseCase.execute(request);
+    });
+
+    verify(userRepository, times(1)).findByEmail(request.getEmail());
+    verify(passwordEncoder, times(1)).matches(request.getPassword(), user.getPassword());
+  }
+
+  @Test
+  @DisplayName("Deve lançar UsernameNotFoundException quando o e-mail não existir")
   void shouldThrowExceptionWhenEmailNotFound() {
     AuthUserRequestDTO request = new AuthUserRequestDTO("notfound@email.com", "password123");
     when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
@@ -99,6 +123,7 @@ class AuthUserUseCaseTest {
     UserEntity user = UserEntity.builder()
         .email("user@email.com")
         .password("encodedPassword123")
+        .active(true)
         .build();
 
     when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));

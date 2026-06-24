@@ -9,6 +9,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
+
 import br.com.kazuhiro.payment_system.providers.UserJWTProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,18 +20,40 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class UserSecurityConfig extends OncePerRequestFilter {
+public class UserSecurityFilter extends OncePerRequestFilter {
   private final UserJWTProvider userJWTProvider;
 
   @Override
   protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
-    String header = request.getHeader("Authorization");
 
-    if (request.getRequestURI().startsWith("/user")) {
-      if (header != null) {
-        var token = this.userJWTProvider.validateToken(header);
+    String header = request.getHeader("Authorization");
+    String requestURI = request.getRequestURI();
+    String normalizedURI = requestURI.replaceAll("/+$", "");
+
+    boolean isUserRegisterUrl = normalizedURI.equalsIgnoreCase("/user");
+    boolean isUserAuthUrl = normalizedURI.equalsIgnoreCase("/user/auth");
+    if (requestURI.startsWith("/user")) {
+      if (isUserRegisterUrl || isUserAuthUrl) {
+        filterChain.doFilter(request, response);
+        return;
+      }
+      if (header == null) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return;
+      }
+      String tokenPuro = header.startsWith("Bearer ") ? header.substring(7) : header;
+      if (tokenPuro.equals("Bearer")) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"message\": \"O token JWT enviado está incompleto ou inválido.\"}");
+        return;
+      }
+
+      try {
+        var token = this.userJWTProvider.validateToken(tokenPuro);
 
         if (token == null) {
           response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -39,15 +63,22 @@ public class UserSecurityConfig extends OncePerRequestFilter {
         request.setAttribute("user_id", token.getSubject());
 
         var roles = token.getClaim("roles").asList(Object.class);
-
         var grants = roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.toString().toUpperCase()))
             .toList();
 
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(token.getSubject(), null,
             grants);
         SecurityContextHolder.getContext().setAuthentication(auth);
+      } catch (TokenExpiredException e) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"message\": \"O token enviado está expirado. Faça login novamente.\"}");
+        return;
       }
     }
+
     filterChain.doFilter(request, response);
   }
+
 }
