@@ -11,3 +11,12 @@ Content-Type: application/json
   "balance": 100.00,
   "email": "zezinho2@zezinho.com"
 } 
+
+### Autenticar usuário
+POST {{baseUrl}}/user/auth
+Content-Type: application/json
+
+{
+  "email": "zezinho2@zezinho.com",
+  "password": "secret"
+}
