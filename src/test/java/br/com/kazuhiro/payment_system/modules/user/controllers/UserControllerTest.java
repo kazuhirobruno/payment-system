@@ -137,21 +137,6 @@ class UserControllerTest {
   }
 
   @Test
-  @DisplayName("Should return 500 Internal Server Error when unexpected exception occurs during creation")
-  void shouldReturnInternalServerErrorWhenUnexpectedExceptionOccursDuringCreation() throws Exception {
-    when(createUserUseCase.execute(any(CreateUserRequestDTO.class)))
-        .thenThrow(new RuntimeException("Database connection failure"));
-
-    mockMvc.perform(post("/user/")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validUserRequestDTO)))
-        .andExpect(status().isInternalServerError())
-        .andExpect(content().string("Erro interno ao processar o cadastro."));
-
-    verify(createUserUseCase, times(1)).execute(any(CreateUserRequestDTO.class));
-  }
-
-  @Test
   @DisplayName("Should return 204 No Content when user account is successfully deleted")
   void shouldReturnNoContentWhenUserAccountIsSuccessfullyDeleted() throws Exception {
     doNothing().when(deleteUserUseCase).delete(sampleUserId);

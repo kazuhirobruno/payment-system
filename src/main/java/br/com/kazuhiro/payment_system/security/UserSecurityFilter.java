@@ -34,7 +34,10 @@ public class UserSecurityFilter extends OncePerRequestFilter {
 
     boolean isUserRegisterUrl = normalizedURI.equalsIgnoreCase("/user");
     boolean isUserAuthUrl = normalizedURI.equalsIgnoreCase("/user/auth");
-    if (requestURI.startsWith("/user")) {
+
+    boolean isUserEndpoint = requestURI.startsWith("/user");
+    boolean isTransactionEndpoint = requestURI.startsWith("/transaction");
+    if (isTransactionEndpoint || isUserEndpoint) {
       if (isUserRegisterUrl || isUserAuthUrl) {
         filterChain.doFilter(request, response);
         return;

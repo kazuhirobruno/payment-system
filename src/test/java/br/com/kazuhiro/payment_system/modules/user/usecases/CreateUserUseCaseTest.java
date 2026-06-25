@@ -76,7 +76,6 @@ class CreateUserUseCaseTest {
   @Test
   @DisplayName("Deve lançar UserFoundException quando o e-mail já estiver cadastrado")
   void shouldThrowUserFoundExceptionWhenEmailAlreadyExists() {
-    // Arrange
     CreateUserRequestDTO request = CreateUserRequestDTO.builder()
         .email("existing@example.com")
         .build();
