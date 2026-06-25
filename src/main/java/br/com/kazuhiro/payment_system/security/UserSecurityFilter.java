@@ -41,6 +41,10 @@ public class UserSecurityFilter extends OncePerRequestFilter {
       }
       if (header == null) {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter()
+            .write("{\"message\": \"O token de autenticação é obrigatório para acessar este recurso.\"}");
         return;
       }
       String tokenPuro = header.startsWith("Bearer ") ? header.substring(7) : header;

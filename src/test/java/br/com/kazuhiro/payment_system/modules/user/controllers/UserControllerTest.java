@@ -7,8 +7,10 @@ import br.com.kazuhiro.payment_system.exceptions.UserFoundException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserResponseDTO;
+import br.com.kazuhiro.payment_system.modules.user.dtos.UserProfileResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.usecases.CreateUserUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.DeleteUserUseCase;
+import br.com.kazuhiro.payment_system.modules.user.usecases.GetProfileUseCase;
 import br.com.kazuhiro.payment_system.providers.UserJWTProvider;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +50,9 @@ class UserControllerTest {
 
   @MockitoBean
   private DeleteUserUseCase deleteUserUseCase;
+
+  @MockitoBean
+  private GetProfileUseCase getProfileUseCase;
 
   @MockitoBean
   private UserJWTProvider userJWTProvider;
@@ -93,10 +99,10 @@ class UserControllerTest {
   @DisplayName("Should return 400 Bad Request when password confirmation does not match")
   void shouldReturnBadRequestWhenPasswordConfirmationDoesNotMatch() throws Exception {
     String expectedErrorMessage = "As senhas não coincidem.";
+
     when(createUserUseCase.execute(any(CreateUserRequestDTO.class)))
         .thenThrow(new PasswordNotMatchesException());
 
-    // Act & Assert
     mockMvc.perform(post("/user/")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(validUserRequestDTO)))
@@ -110,6 +116,7 @@ class UserControllerTest {
   @DisplayName("Should return 409 Conflict when email address is already registered")
   void shouldReturnConflictWhenEmailIsAlreadyRegistered() throws Exception {
     String expectedErrorMessage = "Erro na operação solicitada.";
+
     when(createUserUseCase.execute(any(CreateUserRequestDTO.class)))
         .thenThrow(new UserFoundException());
 
@@ -159,5 +166,50 @@ class UserControllerTest {
         .andExpect(status().isNotFound());
 
     verify(deleteUserUseCase, times(1)).delete(sampleUserId);
+  }
+
+  @Test
+  @DisplayName("Should return 200 OK and profile data when user identifier is found")
+  void shouldReturnOkAndProfileDataWhenUserIdentifierIsFound() throws Exception {
+    UserProfileResponseDTO expectedProfileResponseDTO = UserProfileResponseDTO.builder()
+        .name("John Doe")
+        .email("john.doe@example.com")
+        .balance(new BigDecimal("350.75"))
+        .build();
+
+    when(getProfileUseCase.execute(sampleUserId)).thenReturn(expectedProfileResponseDTO);
+
+    mockMvc.perform(get("/user/profile")
+        .requestAttr("user_id", sampleUserId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("John Doe"))
+        .andExpect(jsonPath("$.email").value("john.doe@example.com"))
+        .andExpect(jsonPath("$.balance").value(350.75));
+
+    verify(getProfileUseCase, times(1)).execute(sampleUserId);
+  }
+
+  @Test
+  @DisplayName("Should return 404 Not Found when profile user identifier does not exist")
+  void shouldReturnNotFoundWhenProfileUserIdentifierDoesNotExist() throws Exception {
+    when(getProfileUseCase.execute(sampleUserId)).thenThrow(new UserNotFoundException());
+
+    mockMvc.perform(get("/user/profile")
+        .requestAttr("user_id", sampleUserId))
+        .andExpect(status().isNotFound());
+
+    verify(getProfileUseCase, times(1)).execute(sampleUserId);
+  }
+
+  @Test
+  @DisplayName("Should return 500 Internal Server Error when unexpected failure occurs during profile retrieval")
+  void shouldReturnInternalServerErrorWhenUnexpectedFailureOccursDuringProfileRetrieval() throws Exception {
+    when(getProfileUseCase.execute(sampleUserId)).thenThrow(new RuntimeException("Database timeout failure"));
+
+    mockMvc.perform(get("/user/profile")
+        .requestAttr("user_id", sampleUserId))
+        .andExpect(status().isInternalServerError());
+
+    verify(getProfileUseCase, times(1)).execute(sampleUserId);
   }
 }

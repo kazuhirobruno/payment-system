@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:8080
-@authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6ImYzMjYxMzFkLWE3Y2YtNDUyZC04MmQxLTZhNzE1MDcxZTU1OSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzMxNTk2fQ.D3McjaFqicD4W_sVXJ1qRdaEk8amqiyFh1hp1fGkPAY
+@authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6ImYzMjYxMzFkLWE3Y2YtNDUyZC04MmQxLTZhNzE1MDcxZTU1OSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzQ5NzQxfQ.CB537B4J4PhGpMRC9kEQcG2hoWskhbJ3ykLc6BY83gM
 # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjI3NjMyZmZhLWFiOTYtNDE4Ni1hYTBlLTIyODhmY2Y4YzRhOSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzI5NjAwfQ.GXdL9qq5Zv27V7E0jCpXNZtc5DCBelHk0ufVxrA4wBQ
 # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjI3NjMyZmZhLWFiOTYtNDE4Ni1hYTBlLTIyODhmY2Y4YzRhOSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzI1OTQyfQ.RtnG2AHWlTq2T3TnDp1zfmp15d_kxSsq53ZA_ZJ7YGQ
 
@@ -27,4 +27,8 @@ Content-Type: application/json
 
 ### Deletar usuário
 DELETE {{baseUrl}}/user/delete
+Authorization: Bearer {{authToken}}
+
+### Buscar dados do usuário
+GET {{baseUrl}}/user/profile
 Authorization: Bearer {{authToken}}

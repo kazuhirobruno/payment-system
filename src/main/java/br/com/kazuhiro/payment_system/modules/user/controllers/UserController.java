@@ -3,6 +3,7 @@ package br.com.kazuhiro.payment_system.modules.user.controllers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,8 +15,10 @@ import br.com.kazuhiro.payment_system.exceptions.UserFoundException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserResponseDTO;
+import br.com.kazuhiro.payment_system.modules.user.dtos.UserProfileResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.usecases.CreateUserUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.DeleteUserUseCase;
+import br.com.kazuhiro.payment_system.modules.user.usecases.GetProfileUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
   private final CreateUserUseCase createUserUseCase;
   private final DeleteUserUseCase deleteUserUseCase;
+  private final GetProfileUseCase getProfileUseCase;
 
   @PostMapping("/")
   @Operation(summary = "Cadastrar um novo usuário no sistema", description = "Esta rota é pública e permite a abertura de uma carteira digital com depósito de saldo inicial.")
@@ -59,6 +63,23 @@ public class UserController {
     try {
       this.deleteUserUseCase.delete(userId);
       return ResponseEntity.noContent().build();
+    } catch (UserNotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @GetMapping("/profile")
+  @Operation(summary = "Obter dados do perfil", description = "Recupera as informações cadastrais e o saldo atual da carteira digital do usuário autenticado.")
+  @ApiResponse(responseCode = "200", description = "Dados do perfil retornados com sucesso.", content = @Content(schema = @Schema(implementation = UserProfileResponseDTO.class)))
+  @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
+  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
+  @ApiResponse(responseCode = "500", description = "Erro interno no servidor.", content = @Content(schema = @Schema(type = "string", example = "Ocorreu um erro interno no servidor.")))
+  public ResponseEntity<Object> balance(@RequestAttribute("user_id") String userId) {
+    try {
+      var response = this.getProfileUseCase.execute(userId);
+      return ResponseEntity.ok().body(response);
     } catch (UserNotFoundException e) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     } catch (Exception e) {
