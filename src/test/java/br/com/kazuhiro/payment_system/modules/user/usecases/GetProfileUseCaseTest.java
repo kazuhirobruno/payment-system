@@ -73,4 +73,24 @@ class GetProfileUseCaseTest {
 
     verify(userRepository, times(1)).findById(sampleUserId);
   }
+
+  @Test
+  @DisplayName("Should throw UserNotFoundException when user identifier is found but account is inactive")
+  void shouldThrowUserNotFoundExceptionWhenUserIdentifierIsFoundButAccountIsInactive() {
+    UserEntity inactiveUserEntity = UserEntity.builder()
+        .id(sampleUserId)
+        .name("John Doe")
+        .email("john.doe@example.com")
+        .balance(new BigDecimal("0.00"))
+        .active(false)
+        .build();
+
+    when(userRepository.findById(sampleUserId)).thenReturn(Optional.of(inactiveUserEntity));
+
+    assertThrows(UserNotFoundException.class, () -> {
+      getProfileUseCase.execute(sampleUserIdString);
+    });
+
+    verify(userRepository, times(1)).findById(sampleUserId);
+  }
 }

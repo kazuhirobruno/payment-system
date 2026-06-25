@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,9 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.kazuhiro.payment_system.exceptions.PasswordNotMatchesException;
 import br.com.kazuhiro.payment_system.exceptions.UserFoundException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
+import br.com.kazuhiro.payment_system.modules.user.dtos.ChangePasswordRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.UserProfileResponseDTO;
+import br.com.kazuhiro.payment_system.modules.user.usecases.ChangePasswordUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.CreateUserUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.DeleteUserUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.GetProfileUseCase;
@@ -33,6 +36,7 @@ public class UserController {
   private final CreateUserUseCase createUserUseCase;
   private final DeleteUserUseCase deleteUserUseCase;
   private final GetProfileUseCase getProfileUseCase;
+  private final ChangePasswordUseCase changePasswordUseCase;
 
   @PostMapping("/")
   @Operation(summary = "Cadastrar um novo usuário no sistema", description = "Esta rota é pública e permite a abertura de uma carteira digital com depósito de saldo inicial.")
@@ -82,6 +86,27 @@ public class UserController {
       return ResponseEntity.ok().body(response);
     } catch (UserNotFoundException e) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @PatchMapping("/password")
+  @Operation(summary = "Alterar a senha do usuário", description = "Atualiza a senha de acesso do usuário autenticado no sistema após validar a consistência dos dados enviados.")
+  @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso. Não retorna corpo na resposta.")
+  @ApiResponse(responseCode = "400", description = "Dados enviados são inválidos ou as senhas informadas não coincidem.", content = @Content(schema = @Schema(type = "string", example = "As senhas não coincidem.")))
+  @ApiResponse(responseCode = "401", description = "Token de autenticação ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
+  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados ou conta inativa.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
+  @ApiResponse(responseCode = "500", description = "Erro interno no servidor ao processar a alteração da senha.", content = @Content(schema = @Schema(type = "string", example = "Ocorreu um erro interno no servidor.")))
+  public ResponseEntity<Object> changePassword(@RequestAttribute("user_id") String userId,
+      @Valid @RequestBody ChangePasswordRequestDTO changePasswordRequestDTO) {
+    try {
+      this.changePasswordUseCase.execute(changePasswordRequestDTO, userId);
+      return ResponseEntity.noContent().build();
+    } catch (UserNotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    } catch (PasswordNotMatchesException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
     } catch (Exception e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }

@@ -19,6 +19,10 @@ public class GetProfileUseCase {
       throw new UserNotFoundException();
     });
 
+    if (!user.isActive()) {
+      throw new UserNotFoundException();
+    }
+
     return UserProfileResponseDTO.builder().balance(user.getBalance()).email(user.getEmail()).name(user.getName())
         .build();
   }

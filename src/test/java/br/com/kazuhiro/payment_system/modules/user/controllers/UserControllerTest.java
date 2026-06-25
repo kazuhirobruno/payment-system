@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.kazuhiro.payment_system.exceptions.PasswordNotMatchesException;
 import br.com.kazuhiro.payment_system.exceptions.UserFoundException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
+import br.com.kazuhiro.payment_system.modules.user.dtos.ChangePasswordRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserRequestDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.CreateUserResponseDTO;
 import br.com.kazuhiro.payment_system.modules.user.dtos.UserProfileResponseDTO;
+import br.com.kazuhiro.payment_system.modules.user.usecases.ChangePasswordUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.CreateUserUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.DeleteUserUseCase;
 import br.com.kazuhiro.payment_system.modules.user.usecases.GetProfileUseCase;
@@ -27,10 +29,12 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,6 +57,9 @@ class UserControllerTest {
 
   @MockitoBean
   private GetProfileUseCase getProfileUseCase;
+
+  @MockitoBean
+  private ChangePasswordUseCase changePasswordUseCase;
 
   @MockitoBean
   private UserJWTProvider userJWTProvider;
@@ -211,5 +218,87 @@ class UserControllerTest {
         .andExpect(status().isInternalServerError());
 
     verify(getProfileUseCase, times(1)).execute(sampleUserId);
+  }
+
+  @Test
+  @DisplayName("Should return 204 No Content when password is successfully updated")
+  void shouldReturnNoContentWhenPasswordIsSuccessfullyUpdated() throws Exception {
+    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewSecurePassword123")
+        .confirmPassword("NewSecurePassword123")
+        .build();
+
+    doNothing().when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+
+    mockMvc.perform(patch("/user/password")
+        .requestAttr("user_id", sampleUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
+        .andExpect(status().isNoContent());
+
+    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+  }
+
+  @Test
+  @DisplayName("Should return 400 Bad Request when password and confirmation do not match")
+  void shouldReturnBadRequestWhenPasswordAndConfirmationDoNotMatchOnUpdate() throws Exception {
+    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewSecurePassword123")
+        .confirmPassword("DifferentPassword123")
+        .build();
+
+    String expectedErrorMessage = "As senhas não coincidem.";
+
+    doThrow(new PasswordNotMatchesException())
+        .when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+
+    mockMvc.perform(patch("/user/password")
+        .requestAttr("user_id", sampleUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().string(expectedErrorMessage));
+
+    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+  }
+
+  @Test
+  @DisplayName("Should return 404 Not Found when trying to update password of a non existing user")
+  void shouldReturnNotFoundWhenTryingToUpdatePasswordOfANonExistingUser() throws Exception {
+    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewSecurePassword123")
+        .confirmPassword("NewSecurePassword123")
+        .build();
+
+    doThrow(new UserNotFoundException())
+        .when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+
+    mockMvc.perform(patch("/user/password")
+        .requestAttr("user_id", sampleUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
+        .andExpect(status().isNotFound());
+
+    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+  }
+
+  @Test
+  @DisplayName("Should return 500 Internal Server Error when unexpected failure occurs during password update")
+  void shouldReturnInternalServerErrorWhenUnexpectedFailureOccursDuringPasswordUpdate() throws Exception {
+    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewSecurePassword123")
+        .confirmPassword("NewSecurePassword123")
+        .build();
+
+    doThrow(new RuntimeException("Crypto encoder failure"))
+        .when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+
+    mockMvc.perform(patch("/user/password")
+        .requestAttr("user_id", sampleUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
+        .andExpect(status().isInternalServerError());
+
+    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
   }
 }
