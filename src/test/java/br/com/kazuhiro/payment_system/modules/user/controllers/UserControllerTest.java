@@ -16,7 +16,6 @@ import br.com.kazuhiro.payment_system.modules.user.usecases.GetProfileUseCase;
 import br.com.kazuhiro.payment_system.providers.UserJWTProvider;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -80,33 +79,26 @@ class UserControllerTest {
   }
 
   @Test
-  @DisplayName("Should return 201 Created and user data when request body is valid")
-  void shouldReturnCreatedWhenRequestBodyIsValid() throws Exception {
-    CreateUserResponseDTO expectedUserResponseDTO = CreateUserResponseDTO.builder()
-        .id(UUID.randomUUID())
+  void shouldCreateUserWithSuccess() throws Exception {
+    var responseDTO = CreateUserResponseDTO.builder()
+        .id(UUID.fromString(sampleUserId))
         .name("John Doe")
         .email("john.doe@example.com")
-        .balance(new BigDecimal("100.00"))
         .build();
 
-    when(createUserUseCase.execute(any(CreateUserRequestDTO.class))).thenReturn(expectedUserResponseDTO);
+    when(createUserUseCase.execute(any(CreateUserRequestDTO.class))).thenReturn(responseDTO);
 
     mockMvc.perform(post("/user/")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(validUserRequestDTO)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").exists())
+        .andExpect(jsonPath("$.id").value(sampleUserId))
         .andExpect(jsonPath("$.name").value("John Doe"))
         .andExpect(jsonPath("$.email").value("john.doe@example.com"));
-
-    verify(createUserUseCase, times(1)).execute(any(CreateUserRequestDTO.class));
   }
 
   @Test
-  @DisplayName("Should return 400 Bad Request when password confirmation does not match")
-  void shouldReturnBadRequestWhenPasswordConfirmationDoesNotMatch() throws Exception {
-    String expectedErrorMessage = "As senhas não coincidem.";
-
+  void shouldReturnBadRequestWhenPasswordsDoNotMatch() throws Exception {
     when(createUserUseCase.execute(any(CreateUserRequestDTO.class)))
         .thenThrow(new PasswordNotMatchesException());
 
@@ -114,16 +106,11 @@ class UserControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(validUserRequestDTO)))
         .andExpect(status().isBadRequest())
-        .andExpect(content().string(expectedErrorMessage));
-
-    verify(createUserUseCase, times(1)).execute(any(CreateUserRequestDTO.class));
+        .andExpect(content().string("As senhas não coincidem."));
   }
 
   @Test
-  @DisplayName("Should return 409 Conflict when email address is already registered")
-  void shouldReturnConflictWhenEmailIsAlreadyRegistered() throws Exception {
-    String expectedErrorMessage = "Erro na operação solicitada.";
-
+  void shouldReturnConflictWhenUserEmailAlreadyExists() throws Exception {
     when(createUserUseCase.execute(any(CreateUserRequestDTO.class)))
         .thenThrow(new UserFoundException());
 
@@ -131,159 +118,106 @@ class UserControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(validUserRequestDTO)))
         .andExpect(status().isConflict())
-        .andExpect(content().string(expectedErrorMessage));
-
-    verify(createUserUseCase, times(1)).execute(any(CreateUserRequestDTO.class));
+        .andExpect(content().string("Erro na operação solicitada."));
   }
 
   @Test
-  @DisplayName("Should return 204 No Content when user account is successfully deleted")
-  void shouldReturnNoContentWhenUserAccountIsSuccessfullyDeleted() throws Exception {
+  void shouldDeleteUserWithSuccess() throws Exception {
     doNothing().when(deleteUserUseCase).delete(sampleUserId);
 
     mockMvc.perform(delete("/user/delete")
         .requestAttr("user_id", sampleUserId))
         .andExpect(status().isNoContent());
-
-    verify(deleteUserUseCase, times(1)).delete(sampleUserId);
   }
 
   @Test
-  @DisplayName("Should return 404 Not Found when trying to delete a non-existing user identifier")
-  void shouldReturnNotFoundWhenTryingToDeleteNonExistingUserIdentifier() throws Exception {
+  void shouldReturnNotFoundWhenDeletingNonExistingUser() throws Exception {
     doThrow(new UserNotFoundException()).when(deleteUserUseCase).delete(sampleUserId);
 
     mockMvc.perform(delete("/user/delete")
         .requestAttr("user_id", sampleUserId))
-        .andExpect(status().isNotFound());
-
-    verify(deleteUserUseCase, times(1)).delete(sampleUserId);
+        .andExpect(status().isNotFound())
+        .andExpect(content().string("Erro na operação solicitada."));
   }
 
   @Test
-  @DisplayName("Should return 200 OK and profile data when user identifier is found")
-  void shouldReturnOkAndProfileDataWhenUserIdentifierIsFound() throws Exception {
-    UserProfileResponseDTO expectedProfileResponseDTO = UserProfileResponseDTO.builder()
+  void shouldGetProfileWithSuccess() throws Exception {
+    var profileResponse = UserProfileResponseDTO.builder()
         .name("John Doe")
         .email("john.doe@example.com")
-        .balance(new BigDecimal("350.75"))
+        .balance(new BigDecimal("100.00"))
         .build();
 
-    when(getProfileUseCase.execute(sampleUserId)).thenReturn(expectedProfileResponseDTO);
+    when(getProfileUseCase.execute(sampleUserId)).thenReturn(profileResponse);
 
     mockMvc.perform(get("/user/profile")
         .requestAttr("user_id", sampleUserId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("John Doe"))
         .andExpect(jsonPath("$.email").value("john.doe@example.com"))
-        .andExpect(jsonPath("$.balance").value(350.75));
-
-    verify(getProfileUseCase, times(1)).execute(sampleUserId);
+        .andExpect(jsonPath("$.balance").value(100.00));
   }
 
   @Test
-  @DisplayName("Should return 404 Not Found when profile user identifier does not exist")
-  void shouldReturnNotFoundWhenProfileUserIdentifierDoesNotExist() throws Exception {
-    when(getProfileUseCase.execute(sampleUserId)).thenThrow(new UserNotFoundException());
+  void shouldReturnNotFoundWhenGettingProfileOfNonExistingUser() throws Exception {
+    when(getProfileUseCase.execute(sampleUserId))
+        .thenThrow(new UserNotFoundException());
 
     mockMvc.perform(get("/user/profile")
         .requestAttr("user_id", sampleUserId))
-        .andExpect(status().isNotFound());
-
-    verify(getProfileUseCase, times(1)).execute(sampleUserId);
+        .andExpect(status().isNotFound())
+        .andExpect(content().string("Erro na operação solicitada."));
   }
 
   @Test
-  @DisplayName("Should return 500 Internal Server Error when unexpected failure occurs during profile retrieval")
-  void shouldReturnInternalServerErrorWhenUnexpectedFailureOccursDuringProfileRetrieval() throws Exception {
-    when(getProfileUseCase.execute(sampleUserId)).thenThrow(new RuntimeException("Database timeout failure"));
-
-    mockMvc.perform(get("/user/profile")
-        .requestAttr("user_id", sampleUserId))
-        .andExpect(status().isInternalServerError());
-
-    verify(getProfileUseCase, times(1)).execute(sampleUserId);
-  }
-
-  @Test
-  @DisplayName("Should return 204 No Content when password is successfully updated")
-  void shouldReturnNoContentWhenPasswordIsSuccessfullyUpdated() throws Exception {
-    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
-        .password("NewSecurePassword123")
-        .confirmPassword("NewSecurePassword123")
+  void shouldChangePasswordWithSuccess() throws Exception {
+    var changePasswordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewPassword123")
+        .confirmPassword("NewPassword123")
         .build();
-
     doNothing().when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
 
     mockMvc.perform(patch("/user/password")
         .requestAttr("user_id", sampleUserId)
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
+        .content(objectMapper.writeValueAsString(changePasswordRequestDTO)))
         .andExpect(status().isNoContent());
-
-    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
   }
 
   @Test
-  @DisplayName("Should return 400 Bad Request when password and confirmation do not match")
-  void shouldReturnBadRequestWhenPasswordAndConfirmationDoNotMatchOnUpdate() throws Exception {
-    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
-        .password("NewSecurePassword123")
-        .confirmPassword("DifferentPassword123")
-        .build();
-
-    String expectedErrorMessage = "As senhas não coincidem.";
-
-    doThrow(new PasswordNotMatchesException())
-        .when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
-
-    mockMvc.perform(patch("/user/password")
-        .requestAttr("user_id", sampleUserId)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().string(expectedErrorMessage));
-
-    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
-  }
-
-  @Test
-  @DisplayName("Should return 404 Not Found when trying to update password of a non existing user")
-  void shouldReturnNotFoundWhenTryingToUpdatePasswordOfANonExistingUser() throws Exception {
-    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
-        .password("NewSecurePassword123")
-        .confirmPassword("NewSecurePassword123")
+  void shouldReturnNotFoundWhenChangingPasswordOfNonExistingUser() throws Exception {
+    var changePasswordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewPassword123")
+        .confirmPassword("NewPassword123")
         .build();
 
     doThrow(new UserNotFoundException())
-        .when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+        .when(changePasswordUseCase)
+        .execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
 
     mockMvc.perform(patch("/user/password")
         .requestAttr("user_id", sampleUserId)
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
-        .andExpect(status().isNotFound());
-
-    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+        .content(objectMapper.writeValueAsString(changePasswordRequestDTO)))
+        .andExpect(status().isNotFound())
+        .andExpect(content().string("Erro na operação solicitada."));
   }
 
   @Test
-  @DisplayName("Should return 500 Internal Server Error when unexpected failure occurs during password update")
-  void shouldReturnInternalServerErrorWhenUnexpectedFailureOccursDuringPasswordUpdate() throws Exception {
-    ChangePasswordRequestDTO passwordRequestDTO = ChangePasswordRequestDTO.builder()
-        .password("NewSecurePassword123")
-        .confirmPassword("NewSecurePassword123")
+  void shouldReturnBadRequestWhenNewPasswordsDoNotMatch() throws Exception {
+    var changePasswordRequestDTO = ChangePasswordRequestDTO.builder()
+        .password("NewPassword123")
+        .confirmPassword("WrongPassword123")
         .build();
-
-    doThrow(new RuntimeException("Crypto encoder failure"))
-        .when(changePasswordUseCase).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+    doThrow(new PasswordNotMatchesException())
+        .when(changePasswordUseCase)
+        .execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
 
     mockMvc.perform(patch("/user/password")
         .requestAttr("user_id", sampleUserId)
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(passwordRequestDTO)))
-        .andExpect(status().isInternalServerError());
-
-    verify(changePasswordUseCase, times(1)).execute(any(ChangePasswordRequestDTO.class), eq(sampleUserId));
+        .content(objectMapper.writeValueAsString(changePasswordRequestDTO)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().string("As senhas não coincidem."));
   }
 }

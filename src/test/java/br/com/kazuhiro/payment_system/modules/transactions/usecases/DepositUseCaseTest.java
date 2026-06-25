@@ -1,4 +1,4 @@
-package br.com.kazuhiro.payment_system.modules.transaction.usecases;
+package br.com.kazuhiro.payment_system.modules.transactions.usecases;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -26,7 +26,6 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionAmoun
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
-import br.com.kazuhiro.payment_system.modules.transactions.usecases.DepositUseCase;
 import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
 import br.com.kazuhiro.payment_system.modules.user.services.UserService;
 import br.com.kazuhiro.payment_system.types.TransactionType;

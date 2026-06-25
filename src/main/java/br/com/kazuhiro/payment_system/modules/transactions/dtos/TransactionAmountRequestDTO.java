@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Objeto de requisição para operações que exigem apenas a informação de valor")
 public class TransactionAmountRequestDTO {
 
-    @NotNull(message = "O valor da operação é obrigatório.")
-    @Positive(message = "O valor deve ser obrigatoriamente maior que zero.")
-    @Schema(description = "Valor monetário a ser processado na operação", example = "100.50", minimum = "0.01")
-    private BigDecimal amount;
+  @NotNull(message = "O valor da operação é obrigatório.")
+  @Positive(message = "O valor deve ser obrigatoriamente maior que zero.")
+  @Schema(description = "Valor monetário a ser processado na operação", example = "100.50", minimum = "0.01")
+  private BigDecimal amount;
 }

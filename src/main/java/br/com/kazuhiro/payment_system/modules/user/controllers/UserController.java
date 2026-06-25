@@ -58,13 +58,13 @@ public class UserController {
   @Operation(summary = "Deletar usuário autenticado", description = "Remove a conta do usuário logado no sistema com base no ID extraído do token JWT.")
   @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso. Não retorna corpo na resposta.")
   @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "O token enviado está expirado. Faça login novamente.")))
-  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados (ex: conta já excluída).", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
-  public ResponseEntity<Void> delete(@RequestAttribute("user_id") String userId) {
+  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados (ex: conta já excluída).", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
+  public ResponseEntity<Object> delete(@RequestAttribute("user_id") String userId) {
     try {
       this.deleteUserUseCase.delete(userId);
       return ResponseEntity.noContent().build();
     } catch (UserNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     }
   }
 
@@ -72,13 +72,13 @@ public class UserController {
   @Operation(summary = "Obter dados do perfil", description = "Recupera as informações cadastrais e o saldo atual da carteira digital do usuário autenticado.")
   @ApiResponse(responseCode = "200", description = "Dados do perfil retornados com sucesso.", content = @Content(schema = @Schema(implementation = UserProfileResponseDTO.class)))
   @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
-  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
+  @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
   public ResponseEntity<Object> balance(@RequestAttribute("user_id") String userId) {
     try {
       var response = this.getProfileUseCase.execute(userId);
       return ResponseEntity.ok().body(response);
     } catch (UserNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     }
   }
 
@@ -94,7 +94,7 @@ public class UserController {
       this.changePasswordUseCase.execute(changePasswordRequestDTO, userId);
       return ResponseEntity.noContent().build();
     } catch (UserNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     } catch (PasswordNotMatchesException e) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
     }
