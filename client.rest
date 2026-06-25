@@ -69,3 +69,7 @@ Content-Type: application/json
   "receiverId": "{{receiverId}}",
   "amount": 1000
 }
+
+### Verifica saldo
+GET {{baseUrl}}/transaction/statement?page=0&size=10&sort=createdAt,desc
+Authorization: Bearer {{authToken}}

@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,11 +15,13 @@ import br.com.kazuhiro.payment_system.exceptions.NegativeAmountException;
 import br.com.kazuhiro.payment_system.exceptions.ReceiverUserInactiveException;
 import br.com.kazuhiro.payment_system.exceptions.SameAccountTransferException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
+import br.com.kazuhiro.payment_system.modules.transactions.dtos.StatementItemResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionAmountRequestDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferRequestDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.DepositUseCase;
+import br.com.kazuhiro.payment_system.modules.transactions.usecases.GetStatementUseCase;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.TransferUseCase;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.WithdrawUseCase;
 import br.com.kazuhiro.payment_system.providers.UserJWTProvider;
@@ -26,6 +29,7 @@ import br.com.kazuhiro.payment_system.types.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +63,9 @@ class TransactionControllerTest {
 
   @MockitoBean
   private TransferUseCase transferUseCase;
+
+  @MockitoBean
+  private GetStatementUseCase getStatementUseCase;
 
   private String dummyUserId;
   private TransactionAmountRequestDTO requestDTO;
@@ -314,4 +321,56 @@ class TransactionControllerTest {
         .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest());
   }
+
+  @Test
+  @DisplayName("Deve retornar 200 OK com o extrato paginado do usuário com sucesso")
+  void shouldReturnStatementWithSuccess() throws Exception {
+    var item = StatementItemResponseDTO.builder()
+        .transactionId(UUID.randomUUID())
+        .type("DEPOSIT")
+        .amount(new BigDecimal("100.00"))
+        .createdAt(Instant.now())
+        .counterpartName(null)
+        .build();
+
+    org.springframework.data.domain.Page<StatementItemResponseDTO> pageResponse = new org.springframework.data.domain.PageImpl<>(
+        List.of(item));
+
+    when(getStatementUseCase.execute(eq(dummyUserId), any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(pageResponse);
+
+    mockMvc.perform(get("/transaction/statement")
+        .requestAttr("user_id", dummyUserId)
+        .param("page", "0")
+        .param("size", "10"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].type").value("DEPOSIT"))
+        .andExpect(jsonPath("$.content[0].amount").value(100.00))
+        .andExpect(jsonPath("$.totalElements").value(1));
+  }
+
+  @Test
+  @DisplayName("Deve retornar 404 Not Found no extrato quando o usuário não for localizado")
+  void shouldReturnNotFoundOnStatementWhenUserDoesNotExist() throws Exception {
+    when(getStatementUseCase.execute(eq(dummyUserId), any(org.springframework.data.domain.Pageable.class)))
+        .thenThrow(new UserNotFoundException());
+
+    mockMvc.perform(get("/transaction/statement")
+        .requestAttr("user_id", dummyUserId))
+        .andExpect(status().isNotFound())
+        .andExpect(content().string("Erro na operação solicitada."));
+  }
+
+  @Test
+  @DisplayName("Deve retornar 403 Forbidden no extrato quando o usuário estiver com a conta inativa")
+  void shouldReturnForbiddenOnStatementWhenUserIsDeleted() throws Exception {
+    when(getStatementUseCase.execute(eq(dummyUserId), any(org.springframework.data.domain.Pageable.class)))
+        .thenThrow(new DeletedUserLoginException());
+
+    mockMvc.perform(get("/transaction/statement")
+        .requestAttr("user_id", dummyUserId))
+        .andExpect(status().isForbidden())
+        .andExpect(content().string("Usuário não encontrado."));
+  }
+
 }

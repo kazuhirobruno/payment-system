@@ -44,6 +44,13 @@ public class UserService {
     return user;
   }
 
+  public void validateUserExists(UUID userId) {
+    UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException());
+    if (!user.isActive()) {
+      throw new DeletedUserLoginException();
+    }
+  }
+
   public List<UserEntity> transferAmount(UUID userId, UUID receiverId, BigDecimal amount) {
     if (userId.equals(receiverId)) {
       throw new SameAccountTransferException();

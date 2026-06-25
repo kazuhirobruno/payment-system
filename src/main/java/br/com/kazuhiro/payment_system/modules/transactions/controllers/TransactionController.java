@@ -2,6 +2,7 @@ package br.com.kazuhiro.payment_system.modules.transactions.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,7 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionRespo
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferRequestDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.DepositUseCase;
+import br.com.kazuhiro.payment_system.modules.transactions.usecases.GetStatementUseCase;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.TransferUseCase;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.WithdrawUseCase;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +29,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,6 +39,7 @@ public class TransactionController {
   private final DepositUseCase depositUseCase;
   private final WithdrawUseCase withdrawUseCase;
   private final TransferUseCase transferUseCase;
+  private final GetStatementUseCase getStatementUseCase;
 
   @PostMapping("/deposit")
   @Operation(summary = "Realizar um depósito", description = "Adiciona um valor monetário ao saldo da carteira do usuário autenticado no sistema.")
@@ -92,6 +96,25 @@ public class TransactionController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     } catch (NegativeAmountException | SameAccountTransferException e) {
       return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
+    }
+  }
+
+  @GetMapping("/statement")
+  @Operation(summary = "Consultar extrato financeiro do usuário autenticado", description = "Gera o histórico de movimentações (depósitos, saques e transferências) associadas à conta do cliente logado de forma paginada.")
+  @ApiResponse(responseCode = "200", description = "Extrato retornado com sucesso em conformidade com o padrão de paginação REST.")
+  @ApiResponse(responseCode = "401", description = "Acesso negado. Token de autenticação ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
+  @ApiResponse(responseCode = "404", description = "Recurso não localizado. Usuário autenticado não existe na base de dados.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
+  @ApiResponse(responseCode = "403", description = "Operação proibida. O usuário associado ao extrato está com a conta inativa.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
+  public ResponseEntity<Object> getStatement(
+      @RequestAttribute("user_id") String userId,
+      Pageable pageable) {
+    try {
+      var response = this.getStatementUseCase.execute(userId, pageable);
+      return ResponseEntity.ok(response);
+    } catch (UserNotFoundException e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    } catch (DeletedUserLoginException e) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
     }
   }
 }

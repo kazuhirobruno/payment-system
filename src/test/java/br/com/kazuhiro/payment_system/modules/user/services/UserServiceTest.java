@@ -1,8 +1,9 @@
 package br.com.kazuhiro.payment_system.modules.user.services;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -321,6 +322,40 @@ class UserServiceTest {
     });
 
     verify(userRepository, never()).save(any(UserEntity.class));
+  }
+
+  @Test
+  @DisplayName("Deve validar com sucesso quando o usuário existir e estiver ativo")
+  void shouldValidateUserExistsWithSuccess() {
+    when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(activeUser));
+
+    assertDoesNotThrow(() -> userService.validateUserExists(dummyUserId));
+
+    verify(userRepository, times(1)).findById(dummyUserId);
+  }
+
+  @Test
+  @DisplayName("Deve lançar UserNotFoundException na validação quando o ID do usuário não existir no banco")
+  void shouldThrowUserNotFoundExceptionOnValidation() {
+    when(userRepository.findById(dummyUserId)).thenReturn(Optional.empty());
+
+    assertThrows(UserNotFoundException.class, () -> {
+      userService.validateUserExists(dummyUserId);
+    });
+
+    verify(userRepository, times(1)).findById(dummyUserId);
+  }
+
+  @Test
+  @DisplayName("Deve lançar DeletedUserLoginException na validação quando o usuário existir mas estiver inativo")
+  void shouldThrowDeletedUserLoginExceptionOnValidation() {
+    when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(inactiveUser));
+
+    assertThrows(DeletedUserLoginException.class, () -> {
+      userService.validateUserExists(dummyUserId);
+    });
+
+    verify(userRepository, times(1)).findById(dummyUserId);
   }
 
 }
