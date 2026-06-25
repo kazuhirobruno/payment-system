@@ -11,10 +11,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.kazuhiro.payment_system.exceptions.DeletedUserLoginException;
 import br.com.kazuhiro.payment_system.exceptions.NegativeAmountException;
+import br.com.kazuhiro.payment_system.exceptions.ReceiverUserInactiveException;
+import br.com.kazuhiro.payment_system.exceptions.SameAccountTransferException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionAmountRequestDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionResponseDTO;
+import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferRequestDTO;
+import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.DepositUseCase;
+import br.com.kazuhiro.payment_system.modules.transactions.usecases.TransferUseCase;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.WithdrawUseCase;
 import br.com.kazuhiro.payment_system.providers.UserJWTProvider;
 import br.com.kazuhiro.payment_system.types.TransactionType;
@@ -48,8 +53,12 @@ class TransactionControllerTest {
 
   @MockitoBean
   private WithdrawUseCase withdrawUseCase;
+
   @MockitoBean
   private UserJWTProvider userJWTProvider;
+
+  @MockitoBean
+  private TransferUseCase transferUseCase;
 
   private String dummyUserId;
   private TransactionAmountRequestDTO requestDTO;
@@ -196,6 +205,110 @@ class TransactionControllerTest {
     TransactionAmountRequestDTO invalidRequest = new TransactionAmountRequestDTO(new BigDecimal("-20.00"));
 
     mockMvc.perform(post("/transaction/withdraw")
+        .requestAttr("user_id", dummyUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(invalidRequest)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Deve realizar transferência com sucesso e retornar 201 Created")
+  void shouldTransferWithSuccess() throws Exception {
+    var transferRequest = TransferRequestDTO.builder()
+        .receiverId(UUID.randomUUID())
+        .amount(new BigDecimal("50.00"))
+        .build();
+
+    var transferResponse = TransferResponseDTO.builder()
+        .transactionId(UUID.randomUUID())
+        .type(TransactionType.TRANSFER.name())
+        .amount(new BigDecimal("50.00"))
+        .newBalance(new BigDecimal("400.00"))
+        .receiverId(transferRequest.getReceiverId())
+        .receiverName("Jane Doe")
+        .createdAt(Instant.now())
+        .build();
+
+    when(transferUseCase.execute(any(TransferRequestDTO.class), eq(dummyUserId)))
+        .thenReturn(transferResponse);
+
+    mockMvc.perform(post("/transaction/transfer")
+        .requestAttr("user_id", dummyUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(transferRequest)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.type").value("TRANSFER"))
+        .andExpect(jsonPath("$.amount").value(50.00))
+        .andExpect(jsonPath("$.newBalance").value(400.00))
+        .andExpect(jsonPath("$.receiverName").value("Jane Doe"));
+  }
+
+  @Test
+  @DisplayName("Deve retornar 404 Not Found quando uma das contas não for localizada")
+  void shouldReturnNotFoundOnTransferWhenUserDoesNotExist() throws Exception {
+    var transferRequest = TransferRequestDTO.builder()
+        .receiverId(UUID.randomUUID())
+        .amount(new BigDecimal("10.00"))
+        .build();
+
+    when(transferUseCase.execute(any(TransferRequestDTO.class), eq(dummyUserId)))
+        .thenThrow(new UserNotFoundException());
+
+    mockMvc.perform(post("/transaction/transfer")
+        .requestAttr("user_id", dummyUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(transferRequest)))
+        .andExpect(status().isNotFound())
+        .andExpect(content().string("Erro na operação solicitada."));
+  }
+
+  @Test
+  @DisplayName("Deve retornar 403 Forbidden quando o remetente ou destinatário estiver inativo")
+  void shouldReturnForbiddenOnTransferWhenUserIsInactive() throws Exception {
+    var transferRequest = TransferRequestDTO.builder()
+        .receiverId(UUID.randomUUID())
+        .amount(new BigDecimal("10.00"))
+        .build();
+
+    when(transferUseCase.execute(any(TransferRequestDTO.class), eq(dummyUserId)))
+        .thenThrow(new ReceiverUserInactiveException());
+
+    mockMvc.perform(post("/transaction/transfer")
+        .requestAttr("user_id", dummyUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(transferRequest)))
+        .andExpect(status().isForbidden())
+        .andExpect(content().string("Usuário não encontrado."));
+  }
+
+  @Test
+  @DisplayName("Deve retornar 422 Unprocessable Entity quando houver quebra de regra de negócio")
+  void shouldReturnUnprocessableEntityOnTransferWhenBusinessRuleFails() throws Exception {
+    var transferRequest = TransferRequestDTO.builder()
+        .receiverId(UUID.randomUUID())
+        .amount(new BigDecimal("500.00"))
+        .build();
+
+    when(transferUseCase.execute(any(TransferRequestDTO.class), eq(dummyUserId)))
+        .thenThrow(new SameAccountTransferException());
+
+    mockMvc.perform(post("/transaction/transfer")
+        .requestAttr("user_id", dummyUserId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(transferRequest)))
+        .andExpect(status().isUnprocessableEntity())
+        .andExpect(content().string("Vetada a transferência para o mesmo usuário."));
+  }
+
+  @Test
+  @DisplayName("Deve barrar e retornar 400 Bad Request se a transferência tiver payload malformado")
+  void shouldReturnBadRequestOnTransferWhenPayloadIsInvalid() throws Exception {
+    var invalidRequest = TransferRequestDTO.builder()
+        .receiverId(null)
+        .amount(new BigDecimal("-5.00"))
+        .build();
+
+    mockMvc.perform(post("/transaction/transfer")
         .requestAttr("user_id", dummyUserId)
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(invalidRequest)))
