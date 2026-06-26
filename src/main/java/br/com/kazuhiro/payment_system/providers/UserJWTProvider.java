@@ -22,7 +22,6 @@ public class UserJWTProvider {
     } catch (TokenExpiredException e) {
       throw e;
     } catch (Exception e) {
-      e.printStackTrace();
       return null;
     }
   }

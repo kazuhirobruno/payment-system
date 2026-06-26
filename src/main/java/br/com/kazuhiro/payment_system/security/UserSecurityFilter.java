@@ -89,5 +89,4 @@ public class UserSecurityFilter extends OncePerRequestFilter {
 
     filterChain.doFilter(request, response);
   }
-
 }
