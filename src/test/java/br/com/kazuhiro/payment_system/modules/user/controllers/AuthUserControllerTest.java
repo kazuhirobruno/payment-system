@@ -46,6 +46,8 @@ class AuthUserControllerTest {
 
   private AuthUserRequestDTO requestDTO;
 
+  private Instant fixedTime = Instant.parse("2076-01-01T00:00:00Z");
+
   @BeforeEach
   void setUp() {
     this.requestDTO = AuthUserRequestDTO.builder()
@@ -59,7 +61,7 @@ class AuthUserControllerTest {
   void shouldReturnOkWhenCredentialsAreValid() throws Exception {
     AuthUserResponseDTO expectedResponse = AuthUserResponseDTO.builder()
         .token("mocked-jwt-token")
-        .expiresAt(Instant.now().plusSeconds(3600))
+        .expiresAt(fixedTime.plusSeconds(3600))
         .roles(List.of("USER"))
         .build();
 

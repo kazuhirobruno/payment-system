@@ -70,6 +70,7 @@ class TransactionControllerTest {
   private String dummyUserId;
   private TransactionAmountRequestDTO requestDTO;
   private TransactionResponseDTO responseDTO;
+  private Instant fixedTime = Instant.parse("2026-01-01T00:00:00Z");
 
   @BeforeEach
   void setUp() {
@@ -82,7 +83,7 @@ class TransactionControllerTest {
         .type(TransactionType.DEPOSIT)
         .amount(new BigDecimal("100.25"))
         .newBalance(new BigDecimal("600.25"))
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
   }
 
@@ -148,7 +149,7 @@ class TransactionControllerTest {
         .type(TransactionType.WITHDRAW)
         .amount(new BigDecimal("50.00"))
         .newBalance(new BigDecimal("450.00"))
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     when(withdrawUseCase.execute(any(TransactionAmountRequestDTO.class), eq(dummyUserId)))
@@ -233,7 +234,7 @@ class TransactionControllerTest {
         .newBalance(new BigDecimal("400.00"))
         .receiverId(transferRequest.getReceiverId())
         .receiverName("Jane Doe")
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     when(transferUseCase.execute(any(TransferRequestDTO.class), eq(dummyUserId)))
@@ -329,7 +330,7 @@ class TransactionControllerTest {
         .transactionId(UUID.randomUUID())
         .type("DEPOSIT")
         .amount(new BigDecimal("100.00"))
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .counterpartName(null)
         .build();
 

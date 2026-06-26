@@ -198,9 +198,8 @@ class UserServiceTest {
   @Test
   @DisplayName("Deve lançar SameAccountTransferException ao tentar transferir para a própria conta")
   void shouldThrowSameAccountTransferExceptionWhenTransferringToSelf() {
-    assertThrows(SameAccountTransferException.class, () -> {
-      userService.transferAmount(dummyUserId, dummyUserId, new BigDecimal("10.00"));
-    });
+    assertThrows(SameAccountTransferException.class,
+        () -> userService.transferAmount(dummyUserId, dummyUserId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).findByIdForUpdate(any(UUID.class));
     verify(userRepository, never()).save(any(UserEntity.class));
@@ -214,9 +213,8 @@ class UserServiceTest {
 
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.empty());
 
-    assertThrows(UserNotFoundException.class, () -> {
-      userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00"));
-    });
+    assertThrows(UserNotFoundException.class,
+        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -231,9 +229,8 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(activeUser));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.empty());
 
-    assertThrows(UserNotFoundException.class, () -> {
-      userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00"));
-    });
+    assertThrows(UserNotFoundException.class,
+        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -259,9 +256,8 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(firstMockReturn));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
-    assertThrows(DeletedUserLoginException.class, () -> {
-      userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00"));
-    });
+    assertThrows(DeletedUserLoginException.class,
+        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -287,9 +283,8 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(firstMockReturn));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
-    assertThrows(ReceiverUserInactiveException.class, () -> {
-      userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00"));
-    });
+    assertThrows(ReceiverUserInactiveException.class,
+        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -317,9 +312,8 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(firstMockReturn));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
-    assertThrows(NegativeAmountException.class, () -> {
-      userService.transferAmount(dummyUserId, receiverId, expensiveAmount);
-    });
+    assertThrows(NegativeAmountException.class,
+        () -> userService.transferAmount(dummyUserId, receiverId, expensiveAmount));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -339,9 +333,7 @@ class UserServiceTest {
   void shouldThrowUserNotFoundExceptionOnValidation() {
     when(userRepository.findById(dummyUserId)).thenReturn(Optional.empty());
 
-    assertThrows(UserNotFoundException.class, () -> {
-      userService.validateUserExists(dummyUserId);
-    });
+    assertThrows(UserNotFoundException.class, () -> userService.validateUserExists(dummyUserId));
 
     verify(userRepository, times(1)).findById(dummyUserId);
   }
@@ -351,9 +343,7 @@ class UserServiceTest {
   void shouldThrowDeletedUserLoginExceptionOnValidation() {
     when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(inactiveUser));
 
-    assertThrows(DeletedUserLoginException.class, () -> {
-      userService.validateUserExists(dummyUserId);
-    });
+    assertThrows(DeletedUserLoginException.class, () -> userService.validateUserExists(dummyUserId));
 
     verify(userRepository, times(1)).findById(dummyUserId);
   }

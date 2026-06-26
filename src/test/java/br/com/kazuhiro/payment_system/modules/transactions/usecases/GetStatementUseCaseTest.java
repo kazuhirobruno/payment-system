@@ -45,6 +45,7 @@ class GetStatementUseCaseTest {
   private String dummyUserId;
   private UserEntity dummyUser;
   private Pageable pageable;
+  private Instant fixedTime = Instant.parse("2026-01-01T00:00:00Z");
 
   @BeforeEach
   void setUp() {
@@ -76,7 +77,7 @@ class GetStatementUseCaseTest {
         .amount(new BigDecimal("100.00"))
         .sender(null)
         .receiver(dummyUser)
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     TransactionEntity transfer = TransactionEntity.builder()
@@ -85,7 +86,7 @@ class GetStatementUseCaseTest {
         .amount(new BigDecimal("50.00"))
         .sender(dummyUser)
         .receiver(secondaryUser)
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     Page<TransactionEntity> pageReturn = new PageImpl<>(List.of(deposit, transfer));

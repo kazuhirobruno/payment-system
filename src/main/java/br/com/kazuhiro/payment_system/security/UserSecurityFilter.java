@@ -31,6 +31,8 @@ public class UserSecurityFilter extends OncePerRequestFilter {
     String header = request.getHeader("Authorization");
     String requestURI = request.getRequestURI();
     String normalizedURI = requestURI.replaceAll("/+$", "");
+    String contentApplicationJson = "application/json";
+    String contentCharEncoding = "UTF-8";
 
     boolean isUserRegisterUrl = normalizedURI.equalsIgnoreCase("/user");
     boolean isUserAuthUrl = normalizedURI.equalsIgnoreCase("/user/auth");
@@ -44,8 +46,8 @@ public class UserSecurityFilter extends OncePerRequestFilter {
       }
       if (header == null) {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+        response.setContentType(contentApplicationJson);
+        response.setCharacterEncoding(contentCharEncoding);
         response.getWriter()
             .write("{\"message\": \"O token de autenticação é obrigatório para acessar este recurso.\"}");
         return;
@@ -53,8 +55,8 @@ public class UserSecurityFilter extends OncePerRequestFilter {
       String tokenPuro = header.startsWith("Bearer ") ? header.substring(7) : header;
       if (tokenPuro.equals("Bearer")) {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+        response.setContentType(contentApplicationJson);
+        response.setCharacterEncoding(contentCharEncoding);
         response.getWriter().write("{\"message\": \"O token JWT enviado está incompleto ou inválido.\"}");
         return;
       }
@@ -78,8 +80,8 @@ public class UserSecurityFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(auth);
       } catch (TokenExpiredException e) {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
+        response.setContentType(contentApplicationJson);
+        response.setCharacterEncoding(contentCharEncoding);
         response.getWriter().write("{\"message\": \"O token enviado está expirado. Faça login novamente.\"}");
         return;
       }

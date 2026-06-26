@@ -40,6 +40,7 @@ class TransactionStatementIntegrationTest {
 
   private UserEntity mainUser;
   private UserEntity secondaryUser;
+  private Instant fixedTime = Instant.parse("2026-01-01T00:00:00Z");
 
   @BeforeEach
   void setUp() {
@@ -49,7 +50,7 @@ class TransactionStatementIntegrationTest {
         .password("secure_password")
         .balance(new BigDecimal("500.00"))
         .active(true)
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     secondaryUser = UserEntity.builder()
@@ -58,7 +59,7 @@ class TransactionStatementIntegrationTest {
         .password("secure_password")
         .balance(new BigDecimal("200.00"))
         .active(true)
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     mainUser = userRepository.save(mainUser);
@@ -73,7 +74,7 @@ class TransactionStatementIntegrationTest {
         .amount(new BigDecimal("100.00"))
         .sender(null)
         .receiver(mainUser)
-        .createdAt(Instant.now())
+        .createdAt(fixedTime)
         .build();
 
     TransactionEntity transfer = TransactionEntity.builder()
@@ -81,7 +82,7 @@ class TransactionStatementIntegrationTest {
         .amount(new BigDecimal("50.00"))
         .sender(mainUser)
         .receiver(secondaryUser)
-        .createdAt(Instant.now().plusSeconds(10))
+        .createdAt(fixedTime.plusSeconds(10))
         .build();
 
     transactionRepository.save(deposit);

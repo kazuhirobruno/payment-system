@@ -3,7 +3,8 @@ package br.com.kazuhiro.payment_system.exceptions.dtos;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
 
 @Data
@@ -11,7 +12,7 @@ import java.util.Map;
 public class ErrorResponse {
 
   @Schema(description = "Data e hora do erro", example = "2026-06-23T12:05:00")
-  private LocalDateTime timestamp;
+  private Instant timestamp;
 
   @Schema(description = "Código do status HTTP", example = "400")
   private int status;
@@ -23,7 +24,7 @@ public class ErrorResponse {
   private Map<String, String> fields;
 
   public ErrorResponse(int status, String error, Map<String, String> fields) {
-    this.timestamp = LocalDateTime.now();
+    this.timestamp = Instant.now(Clock.systemUTC());
     this.status = status;
     this.error = error;
     this.fields = fields;

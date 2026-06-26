@@ -18,8 +18,7 @@ public class UserJWTProvider {
     Algorithm algorithm = Algorithm.HMAC256(secretKey);
 
     try {
-      var tokenDecoded = JWT.require(algorithm).build().verify(token);
-      return tokenDecoded;
+      return JWT.require(algorithm).build().verify(token);
     } catch (TokenExpiredException e) {
       throw e;
     } catch (Exception e) {

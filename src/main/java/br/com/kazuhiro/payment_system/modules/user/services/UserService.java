@@ -21,7 +21,8 @@ public class UserService {
   private final UserRepository userRepository;
 
   public UserEntity addBalance(UUID userId, BigDecimal amount) {
-    UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException());
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(UserNotFoundException::new);
     if (!user.isActive()) {
       throw new DeletedUserLoginException();
     }
@@ -31,7 +32,8 @@ public class UserService {
   }
 
   public UserEntity withdrawAmount(UUID userId, BigDecimal amount) {
-    UserEntity user = userRepository.findByIdForUpdate(userId).orElseThrow(() -> new UserNotFoundException());
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(UserNotFoundException::new);
     if (!user.isActive()) {
       throw new DeletedUserLoginException();
     }
@@ -45,7 +47,8 @@ public class UserService {
   }
 
   public void validateUserExists(UUID userId) {
-    UserEntity user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException());
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(UserNotFoundException::new);
     if (!user.isActive()) {
       throw new DeletedUserLoginException();
     }
@@ -60,9 +63,10 @@ public class UserService {
     UUID secondLockId = firstLockId.equals(userId) ? receiverId : userId;
 
     UserEntity firstUser = userRepository.findByIdForUpdate(firstLockId)
-        .orElseThrow(() -> new UserNotFoundException());
+        .orElseThrow(UserNotFoundException::new);
+
     UserEntity secondUser = userRepository.findByIdForUpdate(secondLockId)
-        .orElseThrow(() -> new UserNotFoundException());
+        .orElseThrow(UserNotFoundException::new);
 
     UserEntity sender = firstUser.getId().equals(userId) ? firstUser : secondUser;
     UserEntity receiver = firstUser.getId().equals(receiverId) ? firstUser : secondUser;
