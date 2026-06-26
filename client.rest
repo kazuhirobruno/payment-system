@@ -1,5 +1,6 @@
 @baseUrl = http://localhost:8080
-@authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjM0YWI4ODA3LTgzYmUtNDI3Yi1iZmNmLWM3Y2UwMTQwYmJiOCIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyNDkyMjQwfQ.9vEpGnl3XX7vg4ULBiKocbVWmPUfiwQqasOESagK8IE
+@authToken=
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjgyNDM0NDU3LWUwMGQtNDYzNS05N2M4LTIxNzdlOGY5YmUxMyIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyNDk3MzI5fQ.8XwNGtJOJonuITfWpuu576tJbZJxf05xb9D1vuIa1n0
 # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjI3NjMyZmZhLWFiOTYtNDE4Ni1hYTBlLTIyODhmY2Y4YzRhOSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzI1OTQyfQ.RtnG2AHWlTq2T3TnDp1zfmp15d_kxSsq53ZA_ZJ7YGQ
 @receiverId=47f4b7d1-2c29-45e2-ba5b-af82b5fc3527
 
@@ -12,7 +13,7 @@ Content-Type: application/json
   "password": "secret",
   "confirmPassword": "secret",
   "balance": 100.00,
-  "email": "zezinho2@zezinho.com"
+  "email": "zezinho3@zezinho.com"
 } 
 
 ### Autenticar usuário
@@ -20,7 +21,7 @@ POST {{baseUrl}}/user/auth
 Content-Type: application/json
 
 {
-  "email": "zezinho1@zezinho.com",
+  "email": "zezinho3@zezinho.com",
   "password": "secret"
 }
 

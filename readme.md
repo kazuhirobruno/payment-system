@@ -3,64 +3,88 @@
 [![Java Version](https://shields.io)](https://openjdk.org)
 [![Spring Boot](https://shields.io)](https://spring.io)
 [![Database](https://shields.io)](https://postgresql.org)
+[![Code Quality](https://shields.io)](https://www.sonarsource.com/products/sonarqube/)
 
 Um sistema transacional simplificado de carteira digital projetado sob princípios de engenharia de software de alta performance. O foco principal da aplicação está na consistência de dados, isolamento de escopo e robustez arquitetural, servindo como consolidação de boas práticas em desenvolvimento backend Java e Spring Boot corporativo.
 
+---
+
 ## 🚀 Funcionalidades do Sistema
 
-A API gerencia movimentações financeiras individuais e intercontas de usuários autenticados, expondo endpoints específicos orientados a recursos:
+A API gerencia movimentações financeiras individuais e intercontas de usuários autenticados:
 
-- **Gerenciamento de Usuários (`/user`)**: Fluxos de cadastro de clientes com aporte de saldo inicial, obtenção de dados consolidados de perfil, alteração de credenciais e exclusão lógica segura (_Soft Delete_).
-- **Depósitos (`POST /transaction/deposit`)**: Injeção de valores na carteira digital com validações automáticas de formato e limites de tipo.
-- **Saques (`POST /transaction/withdraw`)**: Retirada de valores com verificação em tempo real de consistência de saldo.
-- **Transferências (`POST /transaction/transfer`)**: Movimentação de valores entre contas distintas de usuários de forma segura.
-- **Extrato Financeiro (`GET /transaction/statement`)**: Histórico consolidado de transações lido de forma paginada e ordenada.
+- **Gerenciamento de Usuários (`/user`)**: Cadastro, consulta, atualização de saldo e exclusão lógica (_Soft Delete_).
+- **Depósitos (`POST /transaction/deposit`)**: Injeção de valores com validações de domínio.
+- **Saques (`POST /transaction/withdraw`)**: Retirada com validação de saldo em tempo real.
+- **Transferências (`POST /transaction/transfer`)**: Movimentação entre contas com controle de concorrência.
+- **Extrato Financeiro (`GET /transaction/statement`)**: Histórico paginado de transações.
 
 ---
 
 ## 🏛️ Decisões de Arquitetura e Engenharia
 
-Para garantir que a aplicação simule o comportamento de sistemas bancários de grande porte sob alta carga, as seguintes premissas foram adotadas:
+### 1. Controle de Concorrência (Pessimistic Locking)
 
-### 1. Prevenção de Concorrência e Deadlocks (Pessimistic Locking)
+Operações críticas utilizam `@Lock(PESSIMISTIC_WRITE)` para garantir consistência em cenários concorrentes.
 
-Operações de débito (como Saque e Transferência) utilizam **Lock Pessimista** (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) a nível de banco de dados.
+- Estratégia de ordenação de UUIDs para evitar deadlocks em transferências simultâneas.
 
-- No fluxo de transferência, para evitar furos de concorrência (_Race Conditions_) e travamentos mútuos (_Deadlocks_), o sistema aplica uma **estratégia de ordenação estrita dos UUIDs envolvidos**, garantindo que as linhas do banco sejam travadas sempre na mesma sequência alfabética.
+### 2. Separação por Casos de Uso (Use Cases)
 
-### 2. Arquitetura Orientada a Casos de Uso (Use Cases)
+Regras de negócio isoladas em serviços específicos, mantendo controllers enxutas e desacopladas.
 
-O domínio de negócio foi desacoplado em componentes de caso de uso únicos (_Single Responsibility Principle_). As controllers interagem exclusivamente com fluxos isolados (`DepositUseCase`, `WithdrawUseCase`, `TransferUseCase`, `GetStatementUseCase`), mantendo a camada HTTP limpa e agnóstica às regras internas de persistência.
+### 3. Isolamento de Domínios
 
-### 3. Isolamento Rígido entre Módulos
+O módulo de transações não acessa diretamente repositórios de usuários, garantindo separação clara de responsabilidades.
 
-Para preservar o isolamento arquitetural entre o módulo de usuários (`user`) e de movimentações (`transaction`), a camada de transações nunca acessa ou injeta os repositórios de usuários. Toda validação, checagem de existência ou mutação matemática de saldo é delegada via código para o `UserService`.
+### 4. Qualidade de Código e Observabilidade
 
-### 4. Pirâmide de Testes Automatizados Robustos
+O projeto evoluiu com foco em qualidade contínua:
 
-A aplicação conta com uma suite de **80 testes automatizados** com 100% de sucesso, dividida de forma cirúrgica:
+- Integração de **SonarQube** para análise estática de código
+- Refatoração de testes para aderência ao Sonar:
+  - remoção de stubs desnecessários (Mockito strict mode)
+  - uso de method references (`UserNotFoundException::new`)
+  - refatoração de `assertThrows` para evitar múltiplas invocações
+  - remoção de dependência de clock implícito em testes
+- Melhoria na legibilidade e manutenibilidade geral do código
 
-- **Testes Unitários de Negócio**: Isolamento completo utilizando JUnit 5 e Mockito para validar fluxos lógicos e exceções customizadas (`UserNotFoundException`, `DeletedUserLoginException`, `NegativeAmountException`, `SameAccountTransferException`, `ReceiverUserInactiveException`).
-- **Testes WebMvc (Fatiamento)**: Simulação de requisições HTTP via `MockMvc` para validar códigos de status (`201`, `403`, `404`, `422`), contratos de DTOs e ativação do `Jakarta Bean Validation`.
-- **Testes de Integração de Ponta a Ponta**: Execução de cenários reais contra banco de dados em memória **H2** utilizando `@SpringBootTest` e `@Transactional` para garantir o comportamento correto de persistência física e rollbacks automáticos.
+---
+
+## 🧪 Testes Automatizados
+
+A aplicação conta com uma suíte robusta de testes:
+
+- **Testes Unitários (JUnit + Mockito)** para regras de negócio isoladas
+- **Testes de integração** para validação de persistência e fluxo completo
+- **Testes de controller (MockMvc)** para validação de contratos HTTP
+
+Cobertura de cenários críticos:
+
+- Validação de saldo
+- Transferências seguras
+- Regras de usuário ativo/inativo
+- Tratamento de exceções customizadas
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Java 17 / Spring Boot 3**
-- **Spring Data JPA & Hibernate**
-- **PostgreSQL** (Produção) / **H2 Database** (Ambiente de Testes)
-- **Spring Security & JWT** (Autenticação baseada em contextos de atributos de requisição)
-- **OpenAPI 3 / Swagger** (Documentação viva e integrada das rotas e esquemas)
-- **Jakarta Bean Validation** (Segurança na borda contra payloads inválidos)
+- Java 17 / Spring Boot 3
+- Spring Data JPA & Hibernate
+- PostgreSQL / H2 Database
+- Spring Security & JWT
+- OpenAPI 3 / Swagger
+- Jakarta Bean Validation
+- Docker
+- SonarQube (análise estática de código)
+- JUnit 5 / Mockito
 
 ---
 
-## 📋 Como Executar a Suite de Testes
-
-Para validar a integridade de todas as camadas e compilar o projeto de forma limpa, execute o comando abaixo no terminal da raiz do projeto:
+## 📋 Qualidade e Build
 
 ```bash
 mvn clean test
+mvn sonar:sonar
 ```

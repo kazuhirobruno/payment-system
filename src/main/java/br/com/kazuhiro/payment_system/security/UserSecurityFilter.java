@@ -30,9 +30,13 @@ public class UserSecurityFilter extends OncePerRequestFilter {
 
     String header = request.getHeader("Authorization");
     String requestURI = request.getRequestURI();
-    String normalizedURI = requestURI.replaceAll("/+$", "");
+    String normalizedURI = requestURI;
     String contentApplicationJson = "application/json";
     String contentCharEncoding = "UTF-8";
+
+    while (normalizedURI.endsWith("/")) {
+      normalizedURI = normalizedURI.substring(0, normalizedURI.length() - 1);
+    }
 
     boolean isUserRegisterUrl = normalizedURI.equalsIgnoreCase("/user");
     boolean isUserAuthUrl = normalizedURI.equalsIgnoreCase("/user/auth");
