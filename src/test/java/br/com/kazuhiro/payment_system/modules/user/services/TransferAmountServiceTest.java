@@ -31,7 +31,7 @@ import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
 import br.com.kazuhiro.payment_system.modules.user.repositories.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
-public class TransferAmountServiceTest {
+class TransferAmountServiceTest {
   @Mock
   private UserRepository userRepository;
 
@@ -101,8 +101,9 @@ public class TransferAmountServiceTest {
   @Test
   @DisplayName("Deve lançar SameAccountTransferException ao tentar transferir para a própria conta")
   void shouldThrowSameAccountTransferExceptionWhenTransferringToSelf() {
+    BigDecimal amount = BigDecimal.valueOf(10.00);
     assertThrows(SameAccountTransferException.class,
-        () -> transferAmountService.transferAmount(dummyUserId, dummyUserId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, dummyUserId, amount));
 
     verify(userRepository, never()).findByIdForUpdate(any(UUID.class));
     verify(userRepository, never()).save(any(UserEntity.class));
@@ -115,9 +116,9 @@ public class TransferAmountServiceTest {
     UUID firstLockId = dummyUserId.compareTo(receiverId) < 0 ? dummyUserId : receiverId;
 
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.empty());
-
+    BigDecimal amount = BigDecimal.valueOf(10.00);
     assertThrows(UserNotFoundException.class,
-        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, amount));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -131,9 +132,9 @@ public class TransferAmountServiceTest {
 
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(activeUser));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.empty());
-
+    BigDecimal amount = BigDecimal.valueOf(10.00);
     assertThrows(UserNotFoundException.class,
-        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, amount));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -159,8 +160,9 @@ public class TransferAmountServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(firstMockReturn));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
+    BigDecimal amount = BigDecimal.valueOf(10.00);
     assertThrows(DeletedUserLoginException.class,
-        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, amount));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -186,8 +188,9 @@ public class TransferAmountServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.of(firstMockReturn));
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
+    BigDecimal amount = BigDecimal.valueOf(10.00);
     assertThrows(ReceiverUserInactiveException.class,
-        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, amount));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }

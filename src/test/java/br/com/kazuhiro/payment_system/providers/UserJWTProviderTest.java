@@ -43,7 +43,7 @@ class UserJWTProviderTest {
     DecodedJWT result = userJWTProvider.validateToken(bearerToken);
 
     assertNotNull(result);
-    assertEquals(result.getAlgorithm(), "HS256");
+    assertEquals("HS256", result.getAlgorithm());
   }
 
   @Test

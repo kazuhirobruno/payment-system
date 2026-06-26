@@ -24,7 +24,7 @@ import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
 import br.com.kazuhiro.payment_system.modules.user.repositories.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
-public class ValidateUserServiceTest {
+class ValidateUserServiceTest {
   @Mock
   private UserRepository userRepository;
 

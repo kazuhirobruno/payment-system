@@ -130,4 +130,22 @@ class UserSecurityFilterTest {
     verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     verify(filterChain, never()).doFilter(request, response);
   }
+
+  @Test
+  @DisplayName("Deve retornar 401 quando token Bearer estiver incompleto")
+  void shouldReturn401WhenBearerTokenIsIncomplete() throws Exception {
+
+    when(request.getRequestURI()).thenReturn("/transaction/test");
+    when(request.getHeader("Authorization")).thenReturn("Bearer");
+
+    when(response.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+
+    filter.doFilterInternal(request, response, filterChain);
+
+    verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    verify(response).setContentType("application/json");
+    verify(response).setCharacterEncoding("UTF-8");
+    verify(response).getWriter();
+    verify(filterChain, never()).doFilter(request, response);
+  }
 }
