@@ -61,7 +61,7 @@ class UserJWTProviderTest {
   void shouldThrowTokenExpiredException() {
 
     String token = JWT.create()
-        .withExpiresAt(new Date(System.currentTimeMillis() - 1000)) // expirado
+        .withExpiresAt(new Date(System.currentTimeMillis() - 1000))
         .sign(Algorithm.HMAC256("my-secret"));
 
     String bearerToken = "Bearer " + token;

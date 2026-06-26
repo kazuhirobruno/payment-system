@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 
 import br.com.kazuhiro.payment_system.providers.UserJWTProvider;
 import jakarta.servlet.FilterChain;
@@ -28,69 +29,77 @@ public class UserSecurityFilter extends OncePerRequestFilter {
       @NonNull FilterChain filterChain)
       throws ServletException, IOException {
 
-    String header = request.getHeader("Authorization");
     String requestURI = request.getRequestURI();
-    String normalizedURI = requestURI;
-    String contentApplicationJson = "application/json";
-    String contentCharEncoding = "UTF-8";
 
-    while (normalizedURI.endsWith("/")) {
-      normalizedURI = normalizedURI.substring(0, normalizedURI.length() - 1);
+    if (!isMonitoredEndpoint(requestURI) || isPublicRoute(requestURI)) {
+      filterChain.doFilter(request, response);
+      return;
     }
 
-    boolean isUserRegisterUrl = normalizedURI.equalsIgnoreCase("/user");
-    boolean isUserAuthUrl = normalizedURI.equalsIgnoreCase("/user/auth");
+    String header = request.getHeader("Authorization");
+    if (header == null) {
+      sendUnauthorizedResponse(response, "O token de autenticação é obrigatório para acessar este recurso.");
+      return;
+    }
 
-    boolean isUserEndpoint = requestURI.startsWith("/user");
-    boolean isTransactionEndpoint = requestURI.startsWith("/transaction");
-    if (isTransactionEndpoint || isUserEndpoint) {
-      if (isUserRegisterUrl || isUserAuthUrl) {
-        filterChain.doFilter(request, response);
-        return;
-      }
-      if (header == null) {
+    String tokenPuro = header.startsWith("Bearer ") ? header.substring(7) : header;
+    if (tokenPuro.equals("Bearer")) {
+      sendUnauthorizedResponse(response, "O token JWT enviado está incompleto ou inválido.");
+      return;
+    }
+    try {
+      var token = this.userJWTProvider.validateToken(tokenPuro);
+      if (token == null) {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType(contentApplicationJson);
-        response.setCharacterEncoding(contentCharEncoding);
-        response.getWriter()
-            .write("{\"message\": \"O token de autenticação é obrigatório para acessar este recurso.\"}");
         return;
       }
-      String tokenPuro = header.startsWith("Bearer ") ? header.substring(7) : header;
-      if (tokenPuro.equals("Bearer")) {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType(contentApplicationJson);
-        response.setCharacterEncoding(contentCharEncoding);
-        response.getWriter().write("{\"message\": \"O token JWT enviado está incompleto ou inválido.\"}");
-        return;
-      }
-
-      try {
-        var token = this.userJWTProvider.validateToken(tokenPuro);
-
-        if (token == null) {
-          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-          return;
-        }
-
-        request.setAttribute("user_id", token.getSubject());
-
-        var roles = token.getClaim("roles").asList(Object.class);
-        var grants = roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.toString().toUpperCase()))
-            .toList();
-
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(token.getSubject(), null,
-            grants);
-        SecurityContextHolder.getContext().setAuthentication(auth);
-      } catch (TokenExpiredException e) {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType(contentApplicationJson);
-        response.setCharacterEncoding(contentCharEncoding);
-        response.getWriter().write("{\"message\": \"O token enviado está expirado. Faça login novamente.\"}");
-        return;
-      }
+      authenticateUser(request, token);
+    } catch (TokenExpiredException e) {
+      sendUnauthorizedResponse(response, "O token enviado está expirado. Faça login novamente.");
+      return;
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private boolean isMonitoredEndpoint(String requestURI) {
+    if (requestURI == null || requestURI.isEmpty()) {
+      return false;
+    }
+    return requestURI.startsWith("/user") || requestURI.startsWith("/transaction");
+  }
+
+  boolean isPublicRoute(String requestURI) {
+    if (requestURI == null || requestURI.isEmpty()) {
+      return false;
+    }
+
+    int end = requestURI.length();
+    while (end > 0 && requestURI.charAt(end - 1) == '/') {
+      end--;
+    }
+
+    String normalizedURI = (end == 0) ? "/" : requestURI.substring(0, end);
+    return normalizedURI.equalsIgnoreCase("/user") || normalizedURI.equalsIgnoreCase("/user/auth");
+  }
+
+  private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType("application/json;charset=UTF-8");
+    response.setCharacterEncoding("UTF-8");
+    response.getWriter().write("{\"message\": \"" + message + "\"}");
+  }
+
+  private void authenticateUser(HttpServletRequest request, DecodedJWT token) {
+    request.setAttribute("user_id", token.getSubject());
+
+    var roles = token.getClaim("roles").asList(Object.class);
+    var grants = roles.stream()
+        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toString().toUpperCase()))
+        .toList();
+
+    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+        token.getSubject(), null, grants);
+    SecurityContextHolder.getContext().setAuthentication(auth);
   }
 }
