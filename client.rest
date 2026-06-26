@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:8080
-@authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6ImYzMjYxMzFkLWE3Y2YtNDUyZC04MmQxLTZhNzE1MDcxZTU1OSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyNDI3OTU5fQ.-ionCAAI4MNUmvBsUWEqpFtXKkcoDDFuzuGi0-hm0Zw
+@authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjM0YWI4ODA3LTgzYmUtNDI3Yi1iZmNmLWM3Y2UwMTQwYmJiOCIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyNDkyMjQwfQ.9vEpGnl3XX7vg4ULBiKocbVWmPUfiwQqasOESagK8IE
 # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjI3NjMyZmZhLWFiOTYtNDE4Ni1hYTBlLTIyODhmY2Y4YzRhOSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzI1OTQyfQ.RtnG2AHWlTq2T3TnDp1zfmp15d_kxSsq53ZA_ZJ7YGQ
-@receiverId=9b62fca2-6356-4dc7-8970-0baf13c1b557
+@receiverId=47f4b7d1-2c29-45e2-ba5b-af82b5fc3527
 
 ### Criar um novo cliente
 POST {{baseUrl}}/user/
@@ -12,7 +12,7 @@ Content-Type: application/json
   "password": "secret",
   "confirmPassword": "secret",
   "balance": 100.00,
-  "email": "zezinho1@zezinho.com"
+  "email": "zezinho2@zezinho.com"
 } 
 
 ### Autenticar usuário
@@ -20,7 +20,7 @@ POST {{baseUrl}}/user/auth
 Content-Type: application/json
 
 {
-  "email": "zezinho@zezinho.com",
+  "email": "zezinho1@zezinho.com",
   "password": "secret"
 }
 

@@ -17,42 +17,8 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class TransferAmountService {
   private final UserRepository userRepository;
-
-  public UserEntity addBalance(UUID userId, BigDecimal amount) {
-    UserEntity user = userRepository.findById(userId)
-        .orElseThrow(UserNotFoundException::new);
-    if (!user.isActive()) {
-      throw new DeletedUserLoginException();
-    }
-    user.setBalance(user.getBalance().add(amount));
-    userRepository.save(user);
-    return user;
-  }
-
-  public UserEntity withdrawAmount(UUID userId, BigDecimal amount) {
-    UserEntity user = userRepository.findById(userId)
-        .orElseThrow(UserNotFoundException::new);
-    if (!user.isActive()) {
-      throw new DeletedUserLoginException();
-    }
-    BigDecimal newBalance = user.getBalance().subtract(amount);
-    if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-      throw new NegativeAmountException();
-    }
-    user.setBalance(newBalance);
-    userRepository.save(user);
-    return user;
-  }
-
-  public void validateUserExists(UUID userId) {
-    UserEntity user = userRepository.findById(userId)
-        .orElseThrow(UserNotFoundException::new);
-    if (!user.isActive()) {
-      throw new DeletedUserLoginException();
-    }
-  }
 
   public List<UserEntity> transferAmount(UUID userId, UUID receiverId, BigDecimal amount) {
     if (userId.equals(receiverId)) {
@@ -64,7 +30,6 @@ public class UserService {
 
     UserEntity firstUser = userRepository.findByIdForUpdate(firstLockId)
         .orElseThrow(UserNotFoundException::new);
-
     UserEntity secondUser = userRepository.findByIdForUpdate(secondLockId)
         .orElseThrow(UserNotFoundException::new);
 

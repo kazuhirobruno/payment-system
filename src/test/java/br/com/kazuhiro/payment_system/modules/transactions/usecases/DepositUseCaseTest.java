@@ -27,7 +27,7 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionRespo
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
 import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
-import br.com.kazuhiro.payment_system.modules.user.services.UserService;
+import br.com.kazuhiro.payment_system.modules.user.services.BalanceService;
 import br.com.kazuhiro.payment_system.types.TransactionType;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +37,7 @@ class DepositUseCaseTest {
   private TransactionRepository transactionRepository;
 
   @Mock
-  private UserService userService;
+  private BalanceService balanceService;
 
   @InjectMocks
   private DepositUseCase depositUseCase;
@@ -67,7 +67,7 @@ class DepositUseCaseTest {
   @DisplayName("Deve processar o depósito com sucesso, atualizar saldo e salvar transação")
   void shouldExecuteDepositWithSuccess() {
     dummyUser.setBalance(new BigDecimal("600.25"));
-    when(userService.addBalance(dummyUserUuid, requestDTO.getAmount())).thenReturn(dummyUser);
+    when(balanceService.addBalance(dummyUserUuid, requestDTO.getAmount())).thenReturn(dummyUser);
 
     UUID mockTransactionId = UUID.randomUUID();
     when(transactionRepository.save(any(TransactionEntity.class))).thenAnswer(invocation -> {
@@ -85,14 +85,14 @@ class DepositUseCaseTest {
     assertEquals(TransactionType.DEPOSIT, response.getType());
     assertNotNull(response.getCreatedAt());
 
-    verify(userService, times(1)).addBalance(dummyUserUuid, requestDTO.getAmount());
+    verify(balanceService, times(1)).addBalance(dummyUserUuid, requestDTO.getAmount());
     verify(transactionRepository, times(1)).save(any(TransactionEntity.class));
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar UserNotFoundException")
+  @DisplayName("Deve repassar a exceção quando o BalanceService lançar UserNotFoundException")
   void shouldBubbleUpExceptionWhenUserNotFound() {
-    when(userService.addBalance(dummyUserUuid, requestDTO.getAmount()))
+    when(balanceService.addBalance(dummyUserUuid, requestDTO.getAmount()))
         .thenThrow(new UserNotFoundException());
 
     assertThrows(UserNotFoundException.class, () -> {
@@ -103,9 +103,9 @@ class DepositUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar DeletedUserLoginException")
+  @DisplayName("Deve repassar a exceção quando o BalanceService lançar DeletedUserLoginException")
   void shouldBubbleUpExceptionWhenUserIsInactive() {
-    when(userService.addBalance(dummyUserUuid, requestDTO.getAmount()))
+    when(balanceService.addBalance(dummyUserUuid, requestDTO.getAmount()))
         .thenThrow(new DeletedUserLoginException());
 
     assertThrows(DeletedUserLoginException.class, () -> {

@@ -1,6 +1,5 @@
 package br.com.kazuhiro.payment_system.modules.user.services;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,13 +31,12 @@ import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
 import br.com.kazuhiro.payment_system.modules.user.repositories.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
-class UserServiceTest {
-
+public class TransferAmountServiceTest {
   @Mock
   private UserRepository userRepository;
 
   @InjectMocks
-  private UserService userService;
+  private TransferAmountService transferAmountService;
 
   private UUID dummyUserId;
   private UserEntity activeUser;
@@ -66,101 +64,6 @@ class UserServiceTest {
   }
 
   @Test
-  @DisplayName("Deve somar o valor ao saldo com sucesso quando o usuário estiver ativo")
-  void shouldAddBalanceWithSuccessWhenUserIsActive() {
-    BigDecimal amountToDeposit = new BigDecimal("150.50");
-    when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(activeUser));
-    when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-    UserEntity updatedUser = userService.addBalance(dummyUserId, amountToDeposit);
-
-    assertNotNull(updatedUser);
-    assertEquals(new BigDecimal("350.50"), updatedUser.getBalance());
-    verify(userRepository, times(1)).findById(dummyUserId);
-    verify(userRepository, times(1)).save(activeUser);
-  }
-
-  @Test
-  @DisplayName("Deve lançar UserNotFoundException quando o ID do usuário não estiver no banco")
-  void shouldThrowUserNotFoundExceptionWhenUserDoesNotExist() {
-    BigDecimal amountToDeposit = new BigDecimal("50.00");
-    when(userRepository.findById(dummyUserId)).thenReturn(Optional.empty());
-
-    assertThrows(UserNotFoundException.class, () -> {
-      userService.addBalance(dummyUserId, amountToDeposit);
-    });
-
-    verify(userRepository, never()).save(any(UserEntity.class));
-  }
-
-  @Test
-  @DisplayName("Deve lançar DeletedUserLoginException quando o usuário for encontrado mas estiver inativo")
-  void shouldThrowDeletedUserLoginExceptionWhenUserIsInactive() {
-    BigDecimal amountToDeposit = new BigDecimal("100.00");
-    when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(inactiveUser));
-
-    assertThrows(DeletedUserLoginException.class, () -> {
-      userService.addBalance(dummyUserId, amountToDeposit);
-    });
-
-    verify(userRepository, never()).save(any(UserEntity.class));
-  }
-
-  @Test
-  @DisplayName("Deve subtrair o valor do saldo com sucesso quando houver saldo suficiente e o usuário estiver ativo")
-  void shouldWithdrawAmountWithSuccessWhenUserIsActiveAndHasBalance() {
-    BigDecimal amountToWithdraw = new BigDecimal("50.00");
-    when(userRepository.findByIdForUpdate(dummyUserId)).thenReturn(Optional.of(activeUser));
-    when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-    UserEntity updatedUser = userService.withdrawAmount(dummyUserId, amountToWithdraw);
-
-    assertNotNull(updatedUser);
-    assertEquals(new BigDecimal("150.00"), updatedUser.getBalance());
-    verify(userRepository, times(1)).findByIdForUpdate(dummyUserId);
-    verify(userRepository, times(1)).save(activeUser);
-  }
-
-  @Test
-  @DisplayName("Deve lançar UserNotFoundException quando o ID do usuário não existir na busca com lock")
-  void shouldThrowUserNotFoundExceptionWhenUserDoesNotExistOnWithdraw() {
-    BigDecimal amountToWithdraw = new BigDecimal("50.00");
-    when(userRepository.findByIdForUpdate(dummyUserId)).thenReturn(Optional.empty());
-
-    assertThrows(UserNotFoundException.class, () -> {
-      userService.withdrawAmount(dummyUserId, amountToWithdraw);
-    });
-
-    verify(userRepository, never()).save(any(UserEntity.class));
-  }
-
-  @Test
-  @DisplayName("Deve lançar DeletedUserLoginException quando o usuário for encontrado mas estiver inativo no saque")
-  void shouldThrowDeletedUserLoginExceptionWhenUserIsInactiveOnWithdraw() {
-    BigDecimal amountToWithdraw = new BigDecimal("50.00");
-    when(userRepository.findByIdForUpdate(dummyUserId)).thenReturn(Optional.of(inactiveUser));
-
-    assertThrows(DeletedUserLoginException.class, () -> {
-      userService.withdrawAmount(dummyUserId, amountToWithdraw);
-    });
-
-    verify(userRepository, never()).save(any(UserEntity.class));
-  }
-
-  @Test
-  @DisplayName("Deve lançar NegativeAmountException quando o valor do saque for maior que o saldo do usuário")
-  void shouldThrowNegativeAmountExceptionWhenBalanceIsInsufficient() {
-    BigDecimal amountToWithdraw = new BigDecimal("250.00");
-    when(userRepository.findByIdForUpdate(dummyUserId)).thenReturn(Optional.of(activeUser));
-
-    assertThrows(NegativeAmountException.class, () -> {
-      userService.withdrawAmount(dummyUserId, amountToWithdraw);
-    });
-
-    verify(userRepository, never()).save(any(UserEntity.class));
-  }
-
-  @Test
   @DisplayName("Deve transferir o valor entre contas com sucesso quando ambos estiverem ativos e houver saldo")
   void shouldTransferAmountWithSuccess() {
     UUID receiverId = UUID.randomUUID();
@@ -184,7 +87,7 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
     when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    List<UserEntity> result = userService.transferAmount(dummyUserId, receiverId, transferAmount);
+    List<UserEntity> result = transferAmountService.transferAmount(dummyUserId, receiverId, transferAmount);
 
     assertNotNull(result);
     assertEquals(2, result.size());
@@ -199,7 +102,7 @@ class UserServiceTest {
   @DisplayName("Deve lançar SameAccountTransferException ao tentar transferir para a própria conta")
   void shouldThrowSameAccountTransferExceptionWhenTransferringToSelf() {
     assertThrows(SameAccountTransferException.class,
-        () -> userService.transferAmount(dummyUserId, dummyUserId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, dummyUserId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).findByIdForUpdate(any(UUID.class));
     verify(userRepository, never()).save(any(UserEntity.class));
@@ -214,7 +117,7 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(firstLockId)).thenReturn(Optional.empty());
 
     assertThrows(UserNotFoundException.class,
-        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -230,7 +133,7 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.empty());
 
     assertThrows(UserNotFoundException.class,
-        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -257,7 +160,7 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
     assertThrows(DeletedUserLoginException.class,
-        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -284,7 +187,7 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
     assertThrows(ReceiverUserInactiveException.class,
-        () -> userService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, new BigDecimal("10.00")));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
@@ -313,39 +216,8 @@ class UserServiceTest {
     when(userRepository.findByIdForUpdate(secondLockId)).thenReturn(Optional.of(secondMockReturn));
 
     assertThrows(NegativeAmountException.class,
-        () -> userService.transferAmount(dummyUserId, receiverId, expensiveAmount));
+        () -> transferAmountService.transferAmount(dummyUserId, receiverId, expensiveAmount));
 
     verify(userRepository, never()).save(any(UserEntity.class));
   }
-
-  @Test
-  @DisplayName("Deve validar com sucesso quando o usuário existir e estiver ativo")
-  void shouldValidateUserExistsWithSuccess() {
-    when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(activeUser));
-
-    assertDoesNotThrow(() -> userService.validateUserExists(dummyUserId));
-
-    verify(userRepository, times(1)).findById(dummyUserId);
-  }
-
-  @Test
-  @DisplayName("Deve lançar UserNotFoundException na validação quando o ID do usuário não existir no banco")
-  void shouldThrowUserNotFoundExceptionOnValidation() {
-    when(userRepository.findById(dummyUserId)).thenReturn(Optional.empty());
-
-    assertThrows(UserNotFoundException.class, () -> userService.validateUserExists(dummyUserId));
-
-    verify(userRepository, times(1)).findById(dummyUserId);
-  }
-
-  @Test
-  @DisplayName("Deve lançar DeletedUserLoginException na validação quando o usuário existir mas estiver inativo")
-  void shouldThrowDeletedUserLoginExceptionOnValidation() {
-    when(userRepository.findById(dummyUserId)).thenReturn(Optional.of(inactiveUser));
-
-    assertThrows(DeletedUserLoginException.class, () -> userService.validateUserExists(dummyUserId));
-
-    verify(userRepository, times(1)).findById(dummyUserId);
-  }
-
 }

@@ -9,7 +9,7 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionAmoun
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
-import br.com.kazuhiro.payment_system.modules.user.services.UserService;
+import br.com.kazuhiro.payment_system.modules.user.services.BalanceService;
 import br.com.kazuhiro.payment_system.types.TransactionType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +18,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DepositUseCase {
   private final TransactionRepository transactionRepository;
-  private final UserService userService;
+  private final BalanceService balanceService;
 
   @Transactional
   public TransactionResponseDTO execute(TransactionAmountRequestDTO transactionAmountRequestDTO, String id) {
-    var user = userService.addBalance(UUID.fromString(id), transactionAmountRequestDTO.getAmount());
+    var user = balanceService.addBalance(UUID.fromString(id), transactionAmountRequestDTO.getAmount());
     Instant now = Instant.now();
     TransactionEntity entity = TransactionEntity
         .builder()

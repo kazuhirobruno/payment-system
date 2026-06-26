@@ -10,7 +10,7 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.StatementItemRes
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
 import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
-import br.com.kazuhiro.payment_system.modules.user.services.UserService;
+import br.com.kazuhiro.payment_system.modules.user.services.ValidateUserService;
 import br.com.kazuhiro.payment_system.types.TransactionType;
 
 import java.math.BigDecimal;
@@ -36,7 +36,7 @@ class GetStatementUseCaseTest {
   private TransactionRepository transactionRepository;
 
   @Mock
-  private UserService userService;
+  private ValidateUserService validateUserService;
 
   @InjectMocks
   private GetStatementUseCase getStatementUseCase;
@@ -91,7 +91,7 @@ class GetStatementUseCaseTest {
 
     Page<TransactionEntity> pageReturn = new PageImpl<>(List.of(deposit, transfer));
 
-    doNothing().when(userService).validateUserExists(dummyUserUuid);
+    doNothing().when(validateUserService).validateUserExists(dummyUserUuid);
     when(transactionRepository.findStatementByUserId(dummyUserUuid, pageable)).thenReturn(pageReturn);
 
     Page<StatementItemResponseDTO> result = getStatementUseCase.execute(dummyUserId, pageable);
@@ -107,14 +107,14 @@ class GetStatementUseCaseTest {
     assertEquals("TRANSFER", secondItem.getType());
     assertEquals("Jane Doe", secondItem.getCounterpartName());
 
-    verify(userService, times(1)).validateUserExists(dummyUserUuid);
+    verify(validateUserService, times(1)).validateUserExists(dummyUserUuid);
     verify(transactionRepository, times(1)).findStatementByUserId(dummyUserUuid, pageable);
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar UserNotFoundException")
+  @DisplayName("Deve repassar a exceção quando o ValidateUserService lançar UserNotFoundException")
   void shouldBubbleUpUserNotFoundException() {
-    doThrow(new UserNotFoundException()).when(userService).validateUserExists(dummyUserUuid);
+    doThrow(new UserNotFoundException()).when(validateUserService).validateUserExists(dummyUserUuid);
 
     assertThrows(UserNotFoundException.class, () -> {
       getStatementUseCase.execute(dummyUserId, pageable);
@@ -124,9 +124,9 @@ class GetStatementUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar DeletedUserLoginException")
+  @DisplayName("Deve repassar a exceção quando o ValidateUserService lançar DeletedUserLoginException")
   void shouldBubbleUpDeletedUserLoginException() {
-    doThrow(new DeletedUserLoginException()).when(userService).validateUserExists(dummyUserUuid);
+    doThrow(new DeletedUserLoginException()).when(validateUserService).validateUserExists(dummyUserUuid);
 
     assertThrows(DeletedUserLoginException.class, () -> {
       getStatementUseCase.execute(dummyUserId, pageable);

@@ -25,14 +25,14 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferResponse
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
 import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
-import br.com.kazuhiro.payment_system.modules.user.services.UserService;
+import br.com.kazuhiro.payment_system.modules.user.services.TransferAmountService;
 import br.com.kazuhiro.payment_system.types.TransactionType;
 
 @ExtendWith(MockitoExtension.class)
 class TransferUseCaseTest {
 
   @Mock
-  private UserService userService;
+  private TransferAmountService transferAmountService;
 
   @Mock
   private TransactionRepository transactionRepository;
@@ -81,7 +81,7 @@ class TransferUseCaseTest {
     sender.setBalance(new BigDecimal("100.00"));
     receiver.setBalance(new BigDecimal("150.00"));
 
-    when(userService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
+    when(transferAmountService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
         .thenReturn(List.of(sender, receiver));
 
     UUID mockTransactionId = UUID.randomUUID();
@@ -102,14 +102,14 @@ class TransferUseCaseTest {
     assertEquals("Jane Doe", response.getReceiverName());
     assertNotNull(response.getCreatedAt());
 
-    verify(userService, times(1)).transferAmount(senderUuid, receiverUuid, requestDTO.getAmount());
+    verify(transferAmountService, times(1)).transferAmount(senderUuid, receiverUuid, requestDTO.getAmount());
     verify(transactionRepository, times(1)).save(any(TransactionEntity.class));
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar UserNotFoundException")
+  @DisplayName("Deve repassar a exceção quando o TransferAmountService lançar UserNotFoundException")
   void shouldBubbleUpExceptionWhenUserNotFound() {
-    when(userService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
+    when(transferAmountService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
         .thenThrow(new UserNotFoundException());
 
     assertThrows(UserNotFoundException.class, () -> {
@@ -120,9 +120,9 @@ class TransferUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar DeletedUserLoginException")
+  @DisplayName("Deve repassar a exceção quando o TransferAmountService lançar DeletedUserLoginException")
   void shouldBubbleUpExceptionWhenSenderIsInactive() {
-    when(userService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
+    when(transferAmountService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
         .thenThrow(new DeletedUserLoginException());
 
     assertThrows(DeletedUserLoginException.class, () -> {
@@ -133,9 +133,9 @@ class TransferUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar ReceiverUserInactiveException")
+  @DisplayName("Deve repassar a exceção quando o TransferAmountService lançar ReceiverUserInactiveException")
   void shouldBubbleUpExceptionWhenReceiverIsInactive() {
-    when(userService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
+    when(transferAmountService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
         .thenThrow(new ReceiverUserInactiveException());
 
     assertThrows(ReceiverUserInactiveException.class, () -> {
@@ -146,9 +146,9 @@ class TransferUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar SameAccountTransferException")
+  @DisplayName("Deve repassar a exceção quando o TransferAmountService lançar SameAccountTransferException")
   void shouldBubbleUpExceptionWhenTransferringToSelf() {
-    when(userService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
+    when(transferAmountService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
         .thenThrow(new SameAccountTransferException());
 
     assertThrows(SameAccountTransferException.class, () -> {
@@ -159,9 +159,9 @@ class TransferUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar NegativeAmountException por falta de saldo")
+  @DisplayName("Deve repassar a exceção quando o TransferAmountService lançar NegativeAmountException por falta de saldo")
   void shouldBubbleUpExceptionWhenBalanceIsInsufficient() {
-    when(userService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
+    when(transferAmountService.transferAmount(senderUuid, receiverUuid, requestDTO.getAmount()))
         .thenThrow(new NegativeAmountException());
 
     assertThrows(NegativeAmountException.class, () -> {

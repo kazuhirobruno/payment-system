@@ -28,14 +28,14 @@ import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionRespo
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
 import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
-import br.com.kazuhiro.payment_system.modules.user.services.UserService;
+import br.com.kazuhiro.payment_system.modules.user.services.BalanceService;
 import br.com.kazuhiro.payment_system.types.TransactionType;
 
 @ExtendWith(MockitoExtension.class)
 class WithdrawUseCaseTest {
 
   @Mock
-  private UserService userService;
+  private BalanceService balanceService;
 
   @Mock
   private TransactionRepository transactionRepository;
@@ -67,7 +67,7 @@ class WithdrawUseCaseTest {
   @Test
   @DisplayName("Deve processar o saque com sucesso, atualizar o saldo e salvar a transação")
   void shouldExecuteWithdrawWithSuccess() {
-    when(userService.withdrawAmount(dummyUserUuid, requestDTO.getAmount())).thenReturn(dummyUser);
+    when(balanceService.withdrawAmount(dummyUserUuid, requestDTO.getAmount())).thenReturn(dummyUser);
 
     UUID mockTransactionId = UUID.randomUUID();
     when(transactionRepository.save(any(TransactionEntity.class))).thenAnswer(invocation -> {
@@ -85,14 +85,14 @@ class WithdrawUseCaseTest {
     assertEquals(TransactionType.WITHDRAW, response.getType());
     assertNotNull(response.getCreatedAt());
 
-    verify(userService, times(1)).withdrawAmount(dummyUserUuid, requestDTO.getAmount());
+    verify(balanceService, times(1)).withdrawAmount(dummyUserUuid, requestDTO.getAmount());
     verify(transactionRepository, times(1)).save(any(TransactionEntity.class));
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar UserNotFoundException")
+  @DisplayName("Deve repassar a exceção quando o BalanceService lançar UserNotFoundException")
   void shouldBubbleUpExceptionWhenUserNotFound() {
-    when(userService.withdrawAmount(dummyUserUuid, requestDTO.getAmount()))
+    when(balanceService.withdrawAmount(dummyUserUuid, requestDTO.getAmount()))
         .thenThrow(new UserNotFoundException());
 
     assertThrows(UserNotFoundException.class, () -> {
@@ -103,9 +103,9 @@ class WithdrawUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar DeletedUserLoginException")
+  @DisplayName("Deve repassar a exceção quando o BalanceService lançar DeletedUserLoginException")
   void shouldBubbleUpExceptionWhenUserIsInactive() {
-    when(userService.withdrawAmount(dummyUserUuid, requestDTO.getAmount()))
+    when(balanceService.withdrawAmount(dummyUserUuid, requestDTO.getAmount()))
         .thenThrow(new DeletedUserLoginException());
 
     assertThrows(DeletedUserLoginException.class, () -> {
@@ -116,9 +116,9 @@ class WithdrawUseCaseTest {
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o UserService lançar NegativeAmountException por falta de saldo")
+  @DisplayName("Deve repassar a exceção quando o BalanceService lançar NegativeAmountException por falta de saldo")
   void shouldBubbleUpExceptionWhenBalanceIsInsufficient() {
-    when(userService.withdrawAmount(dummyUserUuid, requestDTO.getAmount()))
+    when(balanceService.withdrawAmount(dummyUserUuid, requestDTO.getAmount()))
         .thenThrow(new NegativeAmountException());
 
     assertThrows(NegativeAmountException.class, () -> {

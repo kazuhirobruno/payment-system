@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.StatementItemResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
-import br.com.kazuhiro.payment_system.modules.user.services.UserService;
+import br.com.kazuhiro.payment_system.modules.user.services.ValidateUserService;
 
 import java.util.UUID;
 
@@ -16,11 +16,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GetStatementUseCase {
   private final TransactionRepository transactionRepository;
-  private final UserService userService;
+  private final ValidateUserService validateUserService;
 
   public Page<StatementItemResponseDTO> execute(String authenticatedUserId, Pageable pageable) {
     UUID userId = UUID.fromString(authenticatedUserId);
-    this.userService.validateUserExists(userId);
+    this.validateUserService.validateUserExists(userId);
 
     Page<TransactionEntity> transactionsPage = this.transactionRepository.findStatementByUserId(userId, pageable);
     return transactionsPage.map(transaction -> {
