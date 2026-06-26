@@ -14,6 +14,7 @@ import br.com.kazuhiro.payment_system.exceptions.NegativeAmountException;
 import br.com.kazuhiro.payment_system.exceptions.ReceiverUserInactiveException;
 import br.com.kazuhiro.payment_system.exceptions.SameAccountTransferException;
 import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
+import br.com.kazuhiro.payment_system.modules.transactions.dtos.StatementItemResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionAmountRequestDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransactionResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.TransferRequestDTO;
@@ -23,9 +24,11 @@ import br.com.kazuhiro.payment_system.modules.transactions.usecases.GetStatement
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.TransferUseCase;
 import br.com.kazuhiro.payment_system.modules.transactions.usecases.WithdrawUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,7 @@ public class TransactionController {
 
   @PostMapping("/deposit")
   @Operation(summary = "Realizar um depósito", description = "Adiciona um valor monetário ao saldo da carteira do usuário autenticado no sistema.")
+  @SecurityRequirement(name = "bearer-key")
   @ApiResponse(responseCode = "201", description = "Depósito realizado com sucesso. Retorna o comprovante da operação.", content = @Content(schema = @Schema(implementation = TransactionResponseDTO.class)))
   @ApiResponse(responseCode = "404", description = "Usuário destino não foi encontrado no sistema.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
   @ApiResponse(responseCode = "403", description = "Operação recusada. O usuário está inativo/deletado no sistema.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
@@ -60,6 +64,7 @@ public class TransactionController {
 
   @PostMapping("/withdraw")
   @Operation(summary = "Realizar um saque", description = "Deduz um valor monetário do saldo da carteira do usuário autenticado no sistema.")
+  @SecurityRequirement(name = "bearer-key")
   @ApiResponse(responseCode = "201", description = "Saque realizado com sucesso. Retorna o comprovante da operação.", content = @Content(schema = @Schema(implementation = TransactionResponseDTO.class)))
   @ApiResponse(responseCode = "400", description = "O valor enviado viola as validações de formato.", content = @Content)
   @ApiResponse(responseCode = "404", description = "Usuário não foi encontrado no sistema.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
@@ -81,6 +86,7 @@ public class TransactionController {
 
   @PostMapping("/transfer")
   @Operation(summary = "Realizar uma transferência", description = "Transfere um valor monetário da conta do usuário autenticado para outro usuário cadastrado.")
+  @SecurityRequirement(name = "bearer-key")
   @ApiResponse(responseCode = "201", description = "Transferência concluída com sucesso. Retorna o comprovante.", content = @Content(schema = @Schema(implementation = TransferResponseDTO.class)))
   @ApiResponse(responseCode = "404", description = "O usuário remetente ou o destinatário não foi encontrado.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
   @ApiResponse(responseCode = "403", description = "A operação foi recusada porque um dos usuários envolvidos está inativo.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))
@@ -101,7 +107,8 @@ public class TransactionController {
 
   @GetMapping("/statement")
   @Operation(summary = "Consultar extrato financeiro do usuário autenticado", description = "Gera o histórico de movimentações (depósitos, saques e transferências) associadas à conta do cliente logado de forma paginada.")
-  @ApiResponse(responseCode = "200", description = "Extrato retornado com sucesso em conformidade com o padrão de paginação REST.")
+  @SecurityRequirement(name = "bearer-key")
+  @ApiResponse(responseCode = "200", description = "Extrato retornado com sucesso em conformidade com o padrão de paginação REST.", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = StatementItemResponseDTO.class))))
   @ApiResponse(responseCode = "401", description = "Acesso negado. Token de autenticação ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
   @ApiResponse(responseCode = "404", description = "Recurso não localizado. Usuário autenticado não existe na base de dados.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
   @ApiResponse(responseCode = "403", description = "Operação proibida. O usuário associado ao extrato está com a conta inativa.", content = @Content(schema = @Schema(type = "string", example = "Usuário não encontrado.")))

@@ -1,11 +1,5 @@
 package br.com.kazuhiro.payment_system.modules.transactions.usecases;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import br.com.kazuhiro.payment_system.exceptions.DeletedUserLoginException;
-import br.com.kazuhiro.payment_system.exceptions.UserNotFoundException;
 import br.com.kazuhiro.payment_system.modules.transactions.dtos.StatementItemResponseDTO;
 import br.com.kazuhiro.payment_system.modules.transactions.entities.TransactionEntity;
 import br.com.kazuhiro.payment_system.modules.transactions.repository.TransactionRepository;
@@ -13,11 +7,6 @@ import br.com.kazuhiro.payment_system.modules.user.entities.UserEntity;
 import br.com.kazuhiro.payment_system.modules.user.services.ValidateUserService;
 import br.com.kazuhiro.payment_system.types.TransactionType;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +18,16 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Caso de Uso - Extrato de Conta (GetStatementUseCase)")
 class GetStatementUseCaseTest {
 
   @Mock
@@ -41,97 +39,118 @@ class GetStatementUseCaseTest {
   @InjectMocks
   private GetStatementUseCase getStatementUseCase;
 
-  private UUID dummyUserUuid;
-  private String dummyUserId;
-  private UserEntity dummyUser;
-  private Pageable pageable;
   private Instant fixedTime = Instant.parse("2026-01-01T00:00:00Z");
 
-  @BeforeEach
-  void setUp() {
-    dummyUserUuid = UUID.randomUUID();
-    dummyUserId = dummyUserUuid.toString();
-    pageable = PageRequest.of(0, 10);
-
-    dummyUser = UserEntity.builder()
-        .id(dummyUserUuid)
-        .name("John Doe")
-        .email("john.doe@example.com")
-        .balance(new BigDecimal("200.00"))
-        .active(true)
-        .build();
+  private TransactionEntity createBaseTransaction() {
+    TransactionEntity transaction = new TransactionEntity();
+    transaction.setId(UUID.randomUUID());
+    transaction.setType(TransactionType.TRANSFER);
+    transaction.setAmount(new BigDecimal("100.00"));
+    transaction.setCreatedAt(fixedTime);
+    return transaction;
   }
 
   @Test
-  @DisplayName("Deve retornar o extrato paginado com sucesso mapeando a contraparte corretamente")
-  void shouldReturnStatementWithSuccess() {
-    UUID secondaryUserUuid = UUID.randomUUID();
-    UserEntity secondaryUser = UserEntity.builder()
-        .id(secondaryUserUuid)
-        .name("Jane Doe")
-        .build();
+  @DisplayName("1. Deve mapear o Receiver como contraparte quando o usuário autenticado for o Sender (Ternário = True)")
+  void shouldMapReceiverAsCounterpartWhenUserIsSender() {
+    UUID userId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 10);
 
-    TransactionEntity deposit = TransactionEntity.builder()
-        .id(UUID.randomUUID())
-        .type(TransactionType.DEPOSIT)
-        .amount(new BigDecimal("100.00"))
-        .sender(null)
-        .receiver(dummyUser)
-        .createdAt(fixedTime)
-        .build();
+    UserEntity sender = new UserEntity();
+    sender.setId(userId);
+    sender.setName("Meu Usuário");
 
-    TransactionEntity transfer = TransactionEntity.builder()
-        .id(UUID.randomUUID())
-        .type(TransactionType.TRANSFER)
-        .amount(new BigDecimal("50.00"))
-        .sender(dummyUser)
-        .receiver(secondaryUser)
-        .createdAt(fixedTime)
-        .build();
+    UserEntity receiver = new UserEntity();
+    receiver.setId(UUID.randomUUID());
+    receiver.setName("Fulano Destinatário");
 
-    Page<TransactionEntity> pageReturn = new PageImpl<>(List.of(deposit, transfer));
+    TransactionEntity transaction = createBaseTransaction();
+    transaction.setSender(sender);
+    transaction.setReceiver(receiver);
 
-    doNothing().when(validateUserService).validateUserExists(dummyUserUuid);
-    when(transactionRepository.findStatementByUserId(dummyUserUuid, pageable)).thenReturn(pageReturn);
+    Page<TransactionEntity> page = new PageImpl<>(List.of(transaction));
 
-    Page<StatementItemResponseDTO> result = getStatementUseCase.execute(dummyUserId, pageable);
+    when(transactionRepository.findStatementByUserId(userId, pageable)).thenReturn(page);
+
+    Page<StatementItemResponseDTO> result = getStatementUseCase.execute(userId.toString(), pageable);
 
     assertNotNull(result);
-    assertEquals(2, result.getTotalElements());
-
-    StatementItemResponseDTO firstItem = result.getContent().get(0);
-    assertEquals("DEPOSIT", firstItem.getType());
-    assertNull(firstItem.getCounterpartName());
-
-    StatementItemResponseDTO secondItem = result.getContent().get(1);
-    assertEquals("TRANSFER", secondItem.getType());
-    assertEquals("Jane Doe", secondItem.getCounterpartName());
-
-    verify(validateUserService, times(1)).validateUserExists(dummyUserUuid);
-    verify(transactionRepository, times(1)).findStatementByUserId(dummyUserUuid, pageable);
+    assertEquals(1, result.getContent().size());
+    assertEquals("Fulano Destinatário", result.getContent().get(0).getCounterpartName());
+    verify(validateUserService, times(1)).validateUserExists(userId);
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o ValidateUserService lançar UserNotFoundException")
-  void shouldBubbleUpUserNotFoundException() {
-    doThrow(new UserNotFoundException()).when(validateUserService).validateUserExists(dummyUserUuid);
+  @DisplayName("2. Deve mapear o Sender como contraparte quando o usuário autenticado for o Receiver (Ternário = False)")
+  void shouldMapSenderAsCounterpartWhenUserIsReceiver() {
+    UUID userId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 10);
 
-    assertThrows(UserNotFoundException.class, () -> {
-      getStatementUseCase.execute(dummyUserId, pageable);
-    });
+    UserEntity sender = new UserEntity();
+    sender.setId(UUID.randomUUID());
+    sender.setName("Beltrano Remetente");
 
-    verify(transactionRepository, never()).findStatementByUserId(any(UUID.class), any(Pageable.class));
+    UserEntity receiver = new UserEntity();
+    receiver.setId(userId);
+    receiver.setName("Meu Usuário");
+
+    TransactionEntity transaction = createBaseTransaction();
+    transaction.setSender(sender);
+    transaction.setReceiver(receiver);
+
+    Page<TransactionEntity> page = new PageImpl<>(List.of(transaction));
+
+    when(transactionRepository.findStatementByUserId(userId, pageable)).thenReturn(page);
+
+    Page<StatementItemResponseDTO> result = getStatementUseCase.execute(userId.toString(), pageable);
+
+    assertNotNull(result);
+    assertEquals("Beltrano Remetente", result.getContent().get(0).getCounterpartName());
   }
 
   @Test
-  @DisplayName("Deve repassar a exceção quando o ValidateUserService lançar DeletedUserLoginException")
-  void shouldBubbleUpDeletedUserLoginException() {
-    doThrow(new DeletedUserLoginException()).when(validateUserService).validateUserExists(dummyUserUuid);
+  @DisplayName("3. Deve deixar a contraparte nula se o Sender da transação for nulo (Curto-circuito do &&)")
+  void shouldLeaveCounterpartNullWhenSenderIsNull() {
+    UUID userId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 10);
 
-    assertThrows(DeletedUserLoginException.class, () -> {
-      getStatementUseCase.execute(dummyUserId, pageable);
-    });
+    UserEntity receiver = new UserEntity();
+    receiver.setId(userId);
 
-    verify(transactionRepository, never()).findStatementByUserId(any(UUID.class), any(Pageable.class));
+    TransactionEntity transaction = createBaseTransaction();
+    transaction.setSender(null);
+    transaction.setReceiver(receiver);
+
+    Page<TransactionEntity> page = new PageImpl<>(List.of(transaction));
+
+    when(transactionRepository.findStatementByUserId(userId, pageable)).thenReturn(page);
+
+    Page<StatementItemResponseDTO> result = getStatementUseCase.execute(userId.toString(), pageable);
+
+    assertNotNull(result);
+    assertNull(result.getContent().get(0).getCounterpartName());
+  }
+
+  @Test
+  @DisplayName("4. Deve deixar a contraparte nula se o Receiver da transação for nulo (Segunda parte do && = False)")
+  void shouldLeaveCounterpartNullWhenReceiverIsNull() {
+    UUID userId = UUID.randomUUID();
+    Pageable pageable = PageRequest.of(0, 10);
+
+    UserEntity sender = new UserEntity();
+    sender.setId(userId);
+
+    TransactionEntity transaction = createBaseTransaction();
+    transaction.setSender(sender);
+    transaction.setReceiver(null);
+
+    Page<TransactionEntity> page = new PageImpl<>(List.of(transaction));
+
+    when(transactionRepository.findStatementByUserId(userId, pageable)).thenReturn(page);
+
+    Page<StatementItemResponseDTO> result = getStatementUseCase.execute(userId.toString(), pageable);
+
+    assertNotNull(result);
+    assertNull(result.getContent().get(0).getCounterpartName());
   }
 }

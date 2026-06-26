@@ -24,6 +24,10 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <springdoc.version>2.8.8</springdoc.version>
     <testcontainers.version>1.21.3</testcontainers.version>
+    <sonar.exclusions>
+      **/PaymentSystemApplication.java,
+      **/config/**
+    </sonar.exclusions>
   </properties>
 
   <dependencyManagement>

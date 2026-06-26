@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -56,6 +57,7 @@ public class UserController {
 
   @DeleteMapping("/delete")
   @Operation(summary = "Deletar usuário autenticado", description = "Remove a conta do usuário logado no sistema com base no ID extraído do token JWT.")
+  @SecurityRequirement(name = "bearer-key")
   @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso. Não retorna corpo na resposta.")
   @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "O token enviado está expirado. Faça login novamente.")))
   @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados (ex: conta já excluída).", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
@@ -70,6 +72,7 @@ public class UserController {
 
   @GetMapping("/profile")
   @Operation(summary = "Obter dados do perfil", description = "Recupera as informações cadastrais e o saldo atual da carteira digital do usuário autenticado.")
+  @SecurityRequirement(name = "bearer-key")
   @ApiResponse(responseCode = "200", description = "Dados do perfil retornados com sucesso.", content = @Content(schema = @Schema(implementation = UserProfileResponseDTO.class)))
   @ApiResponse(responseCode = "401", description = "Token ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
   @ApiResponse(responseCode = "404", description = "Usuário não encontrado na base de dados.", content = @Content(schema = @Schema(type = "string", example = "Erro na operação solicitada.")))
@@ -84,6 +87,7 @@ public class UserController {
 
   @PatchMapping("/password")
   @Operation(summary = "Alterar a senha do usuário", description = "Atualiza a senha de acesso do usuário autenticado no sistema após validar a consistência dos dados enviados.")
+  @SecurityRequirement(name = "bearer-key")
   @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso. Não retorna corpo na resposta.")
   @ApiResponse(responseCode = "400", description = "Dados enviados são inválidos ou as senhas informadas não coincidem.", content = @Content(schema = @Schema(type = "string", example = "As senhas não coincidem.")))
   @ApiResponse(responseCode = "401", description = "Token de autenticação ausente, expirado ou inválido.", content = @Content(schema = @Schema(type = "string", example = "Token de autenticação inválido ou malformado.")))
