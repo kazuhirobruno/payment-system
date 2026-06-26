@@ -6,6 +6,10 @@ networks:
 
 volumes:
   pgadmin_data:
+  sonar_data:
+  sonar_extensions:
+  sonar_logs:
+  sonar_db_data:
 
 services:
   postgres:
@@ -32,3 +36,39 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     networks:
       - gv-network
+
+  sonarqube_db:
+    container_name: sonarqube_db_container
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    networks:
+      - gv-network
+
+  sonarqube:
+    container_name: sonarqube_container
+    image: sonarqube:community
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube_db:5432/sonar
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    sysctls:
+      - net.core.somaxconn=1024
+    volumes:
+      - sonar_data:/opt/sonar/data
+      - sonar_extensions:/opt/sonar/extensions
+      - sonar_logs:/opt/sonar/logs
+    networks:
+      - gv-network
+    depends_on:
+      - sonarqube_db
