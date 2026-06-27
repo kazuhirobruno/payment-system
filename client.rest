@@ -1,19 +1,17 @@
 @baseUrl = http://localhost:8080
-@authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6ImZlZTJlYmU0LWQ0ZDctNGE3Ny1iOWY1LTYyMTIzMTEwNzZiMiIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyNTEzMTc2fQ.l7IK50EC7iD0bXuHQWR3R-3yV5JYoMyU4LeVTZj6DQI
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjgyNDM0NDU3LWUwMGQtNDYzNS05N2M4LTIxNzdlOGY5YmUxMyIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyNDk3MzI5fQ.8XwNGtJOJonuITfWpuu576tJbZJxf05xb9D1vuIa1n0
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwYXltZW50LXN5c3RlbSIsInN1YiI6IjI3NjMyZmZhLWFiOTYtNDE4Ni1hYTBlLTIyODhmY2Y4YzRhOSIsInJvbGVzIjpbIlVTRVIiXSwiZXhwIjoxNzgyMzI1OTQyfQ.RtnG2AHWlTq2T3TnDp1zfmp15d_kxSsq53ZA_ZJ7YGQ
-@receiverId=47f4b7d1-2c29-45e2-ba5b-af82b5fc3527
+@authToken=
+@receiverId=
 
 ### Criar um novo cliente
 POST {{baseUrl}}/user/
 Content-Type: application/json
 
 {
-  "name": "Zezinho",
+  "name": "John Doe receiver",
   "password": "secret",
   "confirmPassword": "secret",
   "balance": 100.00,
-  "email": "zezinho4@zezinho.com"
+  "email": "JohnDoe@email.com"
 } 
 
 ### Autenticar usuário
@@ -21,7 +19,7 @@ POST {{baseUrl}}/user/auth
 Content-Type: application/json
 
 {
-  "email": "zezinho3@zezinho.com",
+  "email": "JohnDoe@email.com",
   "password": "secret"
 }
 
@@ -49,7 +47,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "amount": 1000
+  "amount": 100
 }
 
 ### Realizar saque
@@ -58,7 +56,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "amount": 1000
+  "amount": 100
 }
 
 ### Transferencia 
@@ -68,7 +66,7 @@ Content-Type: application/json
 
 {
   "receiverId": "{{receiverId}}",
-  "amount": 1000
+  "amount": 100
 }
 
 ### Verifica saldo
